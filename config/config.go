@@ -24,13 +24,13 @@ type Config struct {
 func New(filename string) (Config, error) {
 	config := Config{}
 	config.filename = filename
-	err := config.LoadConfig(filename)
+	err := config.LoadConfig()
 	return config, err
 }
 
 // LoadConfig load config
-func (c *Config) LoadConfig(filename string) error {
-	configfile, err := ioutil.ReadFile(filename)
+func (c *Config) LoadConfig() error {
+	configfile, err := ioutil.ReadFile(c.filename)
 	if err != nil {
 		return err
 	}
