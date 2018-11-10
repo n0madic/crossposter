@@ -124,11 +124,15 @@ func (vk *Vk) Post(name string, post *crossposter.Post) (string, error) {
 		mediaIDs = append(mediaIDs, vk.client.GetPhotosString(media))
 	}
 
+	message := post.Text
+	if post.More {
+		message += "\n" + post.URL
+	}
 	params := url.Values{}
 	if len(mediaIDs) > 0 {
 		params.Set("attachments", strings.Join(mediaIDs, ","))
 	}
-	postID, err := vk.client.WallPost(screenName.ObjectID, post.Text, params)
+	postID, err := vk.client.WallPost(screenName.ObjectID, message, params)
 	if err != nil {
 		return "", err
 	}

@@ -41,22 +41,17 @@ func (inst *Instagram) Get(name string) ([]crossposter.Post, error) {
 	var posts []crossposter.Post
 
 	media := user.Feed()
-	for i := 0; i < 10; i++ {
-		media.Next()
+	media.Next()
 
-		for _, item := range media.Items {
-			if item.MediaToString() == "photo" {
-
-				posts = append(posts, crossposter.Post{
-					Date:        time.Unix(int64(item.TakenAt), 0),
-					URL:         fmt.Sprintf("https://www.instagram.com/p/%s", item.Code),
-					Author:      user.FullName,
-					Text:        item.Caption.Text,
-					Attachments: []string{item.Images.GetBest()},
-					More:        false,
-				})
-			}
-		}
+	for _, item := range media.Items {
+		posts = append(posts, crossposter.Post{
+			Date:        time.Unix(int64(item.TakenAt), 0),
+			URL:         fmt.Sprintf("https://www.instagram.com/p/%s", item.Code),
+			Author:      user.FullName,
+			Text:        item.Caption.Text,
+			Attachments: []string{item.Images.GetBest()},
+			More:        item.MediaToString() != "photo",
+		})
 	}
 
 	return posts, nil
@@ -77,7 +72,12 @@ func (inst *Instagram) Post(name string, post *crossposter.Post) (string, error)
 			return "", fmt.Errorf("bad status: %s", res.Status)
 		}
 
-		item, err := inst.client.UploadPhoto(res.Body, post.Text, 82, 0)
+		caption := post.Text
+		if post.More {
+			caption += "\n" + post.URL
+		}
+
+		item, err := inst.client.UploadPhoto(res.Body, caption, 82, 0)
 		if err != nil {
 			return "", err
 		}
