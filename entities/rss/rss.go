@@ -8,7 +8,10 @@ import (
 	"github.com/gorilla/feeds"
 	"github.com/mmcdole/gofeed"
 	"github.com/n0madic/crossposter"
+	"github.com/n0madic/crossposter/utils"
 )
+
+const maxTitleLength = 50
 
 // RSS entity
 type RSS struct {
@@ -68,19 +71,27 @@ func (rss *RSS) Get(name string) ([]crossposter.Post, error) {
 
 // Post add item to RSS feed
 func (rss *RSS) Post(name string, post *crossposter.Post) (string, error) {
+	title := post.Title
+	if title == "" {
+		title = utils.TruncateText(post.Text, maxTitleLength)
+	}
+
 	description := post.Text
 	for _, attach := range post.Attachments {
 		description += fmt.Sprintf(`<br><img src="%s" />`, attach)
 	}
+	if post.More || title == "" {
+		description += " " + post.URL
+	}
 
 	rss.feed.Add(&feeds.Item{
-		Title:       post.Title,
+		Title:       title,
 		Link:        &feeds.Link{Href: post.URL},
-		Description: description,
+		Description: strings.TrimSpace(description),
 		Author:      &feeds.Author{Name: post.Author},
 		Created:     post.Date,
 	})
-	return "", nil
+	return "/rss/" + name, nil
 }
 
 // Handler return RSS XML
