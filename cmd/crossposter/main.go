@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"sort"
 	"sync"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/n0madic/crossposter"
 	"github.com/n0madic/crossposter/config"
 	_ "github.com/n0madic/crossposter/entities/instagram"
+	_ "github.com/n0madic/crossposter/entities/rss"
 	_ "github.com/n0madic/crossposter/entities/twitter"
 	_ "github.com/n0madic/crossposter/entities/vk"
 )
@@ -47,14 +49,18 @@ func main() {
 
 	entities := make(map[string]crossposter.EntityInterface)
 
-	for entity := range cfg.Entities {
-		log.Printf("Create %s entity: %s", cfg.Entities[entity].Type, entity)
-		acc, err := crossposter.Initializers[cfg.Entities[entity].Type](cfg.Entities[entity])
+	for entity, options := range cfg.Entities {
+		log.Printf("Create %s entity: %s", options.Type, entity)
+		ent, err := crossposter.Initializers[options.Type](entity, options)
 		if err != nil {
 			log.Fatalf("Can't create entity %s: %s", entity, err)
 		}
-		entities[entity] = acc
+		entities[entity] = ent
 	}
+
+	go func() {
+		log.Fatal(http.ListenAndServe(":8000", nil))
+	}()
 
 	for source := range cfg.Sources {
 		if _, ok := cfg.Entities[cfg.Sources[source].Entity]; !ok {
@@ -75,7 +81,7 @@ func main() {
 				log.Printf("Get post for [%s] %s", entityType, source)
 				posts, err := entities[cfg.Sources[source].Entity].Get(source)
 				if err != nil {
-					log.Printf("Get post error for [%s] %s", entityType, source)
+					log.Printf("Get post error for [%s] %s: %s", entityType, source, err)
 				}
 
 				sort.Slice(posts, func(i, j int) bool {

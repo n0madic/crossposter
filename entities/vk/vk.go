@@ -2,6 +2,7 @@ package vk
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"path"
@@ -26,7 +27,7 @@ func init() {
 }
 
 // New return Vk entity
-func New(entity crossposter.Entity) (crossposter.EntityInterface, error) {
+func New(name string, entity crossposter.Entity) (crossposter.EntityInterface, error) {
 	var client *vkapi.VKClient
 	var err error
 	if entity.Token != "" {
@@ -139,6 +140,9 @@ func (vk *Vk) Post(name string, post *crossposter.Post) (string, error) {
 
 	return fmt.Sprintf("Posted in VK https://vk.com/wall-%v_%v", screenName.ObjectID, postID), nil
 }
+
+// Handler not implemented
+func (vk *Vk) Handler(w http.ResponseWriter, r *http.Request) {}
 
 // GetMaxSizePhoto from attachment
 func GetMaxSizePhoto(p vkapi.PhotoAttachment) string {

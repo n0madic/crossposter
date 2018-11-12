@@ -1,6 +1,7 @@
 package crossposter
 
 import (
+	"net/http"
 	"time"
 )
 
@@ -20,6 +21,7 @@ type (
 	// Entity type
 	Entity struct {
 		Type        string `json:"type" yaml:"type"`
+		URL         string `json:"URL" yaml:"URL"`
 		Key         string `json:"key" yaml:"key"`
 		KeySecret   string `json:"key_secret" yaml:"key_secret"`
 		Token       string `json:"token" yaml:"token"`
@@ -30,10 +32,11 @@ type (
 	EntityInterface interface {
 		Get(name string) ([]Post, error)
 		Post(name string, post *Post) (string, error)
+		Handler(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Initializer of entity
-	Initializer func(entity Entity) (EntityInterface, error)
+	Initializer func(name string, entity Entity) (EntityInterface, error)
 )
 
 var (

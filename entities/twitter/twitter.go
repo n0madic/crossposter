@@ -2,6 +2,7 @@ package twitter
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
@@ -27,7 +28,7 @@ func init() {
 }
 
 // New return Twitter entity
-func New(entity crossposter.Entity) (crossposter.EntityInterface, error) {
+func New(name string, entity crossposter.Entity) (crossposter.EntityInterface, error) {
 	client := anaconda.NewTwitterApiWithCredentials(
 		entity.Token,
 		entity.TokenSecret,
@@ -106,6 +107,9 @@ func (tw *Twitter) Post(name string, post *crossposter.Post) (string, error) {
 
 	return fmt.Sprintf("Posted tweet https://twitter.com/%s/status/%s", result.User.ScreenName, result.IdStr), nil
 }
+
+// Handler not implemented
+func (tw *Twitter) Handler(w http.ResponseWriter, r *http.Request) {}
 
 // TwitterizeText prepares text for twitter status
 func TwitterizeText(input string) string {

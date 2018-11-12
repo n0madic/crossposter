@@ -20,7 +20,7 @@ func init() {
 }
 
 // New return Instagram entity
-func New(entity crossposter.Entity) (crossposter.EntityInterface, error) {
+func New(name string, entity crossposter.Entity) (crossposter.EntityInterface, error) {
 	client := goinsta.New(
 		entity.Key,
 		entity.KeySecret,
@@ -86,3 +86,6 @@ func (inst *Instagram) Post(name string, post *crossposter.Post) (string, error)
 
 	return strings.Join(mediaURLs, " "), nil
 }
+
+// Handler not implemented
+func (inst *Instagram) Handler(w http.ResponseWriter, r *http.Request) {}
