@@ -106,7 +106,6 @@ func (rss *RSS) Handler(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(xml))
 		}
 	} else {
-		w.WriteHeader(http.StatusNoContent)
 		w.Write([]byte("No new RSS"))
 	}
 }

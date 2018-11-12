@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"sort"
@@ -20,6 +22,7 @@ import (
 const timeLayout = "2006-01-02T15:04:05"
 
 var (
+	bindHost        string
 	configJSON      string
 	defaultWaitTime int64
 	dontPost        bool
@@ -32,7 +35,8 @@ func init() {
 	flag.StringVar(&configJSON, "config", "config.yaml", "Config file")
 	flag.StringVar(&lastUpdateStr, "last", time.Now().Format(timeLayout), "Initial date for update")
 	flag.BoolVar(&dontPost, "dontpost", false, "Do not post on targets")
-	flag.Int64Var(&defaultWaitTime, "waittime", 10, "Default wait time duration")
+	flag.Int64Var(&defaultWaitTime, "waittime", 10, "Default wait time duration in minutes")
+	flag.StringVar(&bindHost, "bind", ":8000", "Bind address")
 }
 
 func main() {
@@ -58,8 +62,25 @@ func main() {
 		entities[entity] = ent
 	}
 
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		t, err := template.New("index").Parse(indexTpl)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+		} else {
+			var tpl bytes.Buffer
+			err = t.Execute(&tpl, cfg)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(err.Error()))
+			} else {
+				w.Write(tpl.Bytes())
+			}
+		}
+	})
+
 	go func() {
-		log.Fatal(http.ListenAndServe(":8000", nil))
+		log.Fatal(http.ListenAndServe(bindHost, nil))
 	}()
 
 	for source := range cfg.Sources {
@@ -78,7 +99,7 @@ func main() {
 			}
 
 			for {
-				log.Printf("Get post for [%s] %s", entityType, source)
+				log.Printf("Check updates for [%s] %s", entityType, source)
 				posts, err := entities[cfg.Sources[source].Entity].Get(source)
 				if err != nil {
 					log.Printf("Get post error for [%s] %s: %s", entityType, source, err)
