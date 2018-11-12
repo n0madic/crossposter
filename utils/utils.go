@@ -69,3 +69,12 @@ func GetURLContentInBase64(uri string) (string, error) {
 
 	return buffer.String(), nil
 }
+
+// TruncateText is truncate strings to a fixed size
+func TruncateText(text string, limit int) string {
+	runeText := []rune(text)
+	if len(runeText) <= limit {
+		return text
+	}
+	return string(runeText[:limit-1]) + "…"
+}
