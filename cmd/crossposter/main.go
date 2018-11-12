@@ -13,10 +13,7 @@ import (
 
 	"github.com/n0madic/crossposter"
 	"github.com/n0madic/crossposter/config"
-	_ "github.com/n0madic/crossposter/entities/instagram"
-	_ "github.com/n0madic/crossposter/entities/rss"
-	_ "github.com/n0madic/crossposter/entities/twitter"
-	_ "github.com/n0madic/crossposter/entities/vk"
+	_ "github.com/n0madic/crossposter/entities"
 )
 
 const timeLayout = "2006-01-02T15:04:05"
