@@ -23,8 +23,9 @@ func init() {
 func New(name string, entity crossposter.Entity) (crossposter.EntityInterface, error) {
 	rss := &RSS{
 		feed: &feeds.Feed{
-			Title: name,
-			Link:  &feeds.Link{Href: entity.URL},
+			Title:       name,
+			Description: entity.Description,
+			Link:        &feeds.Link{Href: entity.URL},
 		},
 	}
 	http.HandleFunc("/rss/"+name, rss.Handler)
