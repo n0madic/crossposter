@@ -21,7 +21,7 @@ type (
 	// Entity type
 	Entity struct {
 		Type        string `json:"type" yaml:"type"`
-		URL         string `json:"URL" yaml:"URL"`
+		URL         string `json:"url" yaml:"url"`
 		Key         string `json:"key" yaml:"key"`
 		KeySecret   string `json:"key_secret" yaml:"key_secret"`
 		Token       string `json:"token" yaml:"token"`

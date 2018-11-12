@@ -82,7 +82,7 @@ func (vk *Vk) Get(domain string) ([]crossposter.Post, error) {
 			}
 			posts = append(posts, crossposter.Post{
 				Date:        time.Unix(item.Date, 0),
-				URL:         fmt.Sprintf(" https://vk.com/wall%v_%v", item.FromID, item.ID),
+				URL:         fmt.Sprintf("https://vk.com/wall%v_%v", item.FromID, item.ID),
 				Author:      author,
 				Text:        item.Text,
 				Attachments: photos,

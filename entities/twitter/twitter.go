@@ -63,7 +63,7 @@ func (tw *Twitter) Get(screenName string) ([]crossposter.Post, error) {
 		}
 		posts = append(posts, crossposter.Post{
 			Date:        timestamp,
-			URL:         fmt.Sprintf(" https://twitter.com/%s/status/%s", screenName, tweet.IdStr),
+			URL:         fmt.Sprintf("https://twitter.com/%s/status/%s", screenName, tweet.IdStr),
 			Author:      tweet.User.ScreenName,
 			Text:        tweet.FullText,
 			Attachments: mediaURLs,
@@ -80,7 +80,7 @@ func (tw *Twitter) Post(name string, post *crossposter.Post) (string, error) {
 
 	status := TwitterizeText(post.Text)
 	if strings.HasSuffix(status, "…") || post.More {
-		status += post.URL
+		status += " " + post.URL
 	}
 
 	for index, attach := range post.Attachments {
