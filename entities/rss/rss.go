@@ -12,8 +12,7 @@ import (
 
 // RSS entity
 type RSS struct {
-	feed      *feeds.Feed
-	sourceURL string
+	feed *feeds.Feed
 }
 
 func init() {
@@ -23,8 +22,10 @@ func init() {
 // New return RSS entity
 func New(name string, entity crossposter.Entity) (crossposter.EntityInterface, error) {
 	rss := &RSS{
-		feed:      &feeds.Feed{Title: name},
-		sourceURL: entity.URL,
+		feed: &feeds.Feed{
+			Title: name,
+			Link:  &feeds.Link{Href: entity.URL},
+		},
 	}
 	http.HandleFunc("/rss/"+name, rss.Handler)
 	return rss, nil
@@ -33,7 +34,7 @@ func New(name string, entity crossposter.Entity) (crossposter.EntityInterface, e
 // Get items from RSS
 func (rss *RSS) Get(name string) ([]crossposter.Post, error) {
 	fp := gofeed.NewParser()
-	sourceFeed, err := fp.ParseURL(rss.sourceURL)
+	sourceFeed, err := fp.ParseURL(rss.feed.Link.Href)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +69,7 @@ func (rss *RSS) Get(name string) ([]crossposter.Post, error) {
 func (rss *RSS) Post(name string, post *crossposter.Post) (string, error) {
 	description := post.Text
 	for _, attach := range post.Attachments {
-		description += fmt.Sprintf(`\n<br><img src="%s" />`, attach)
+		description += fmt.Sprintf(`<br><img src="%s" />`, attach)
 	}
 
 	rss.feed.Add(&feeds.Item{
@@ -84,9 +85,14 @@ func (rss *RSS) Post(name string, post *crossposter.Post) (string, error) {
 // Handler return RSS XML
 func (rss *RSS) Handler(w http.ResponseWriter, r *http.Request) {
 	if len(rss.feed.Items) > 0 {
-		xml, _ := rss.feed.ToRss()
-		w.Header().Set("Content-Type", "application/xml")
-		w.Write([]byte(xml))
+		xml, err := rss.feed.ToRss()
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+		} else {
+			w.Header().Set("Content-Type", "application/xml")
+			w.Write([]byte(xml))
+		}
 	} else {
 		w.WriteHeader(http.StatusNoContent)
 		w.Write([]byte("No new RSS"))
