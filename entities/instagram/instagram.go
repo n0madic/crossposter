@@ -22,8 +22,8 @@ func init() {
 // New return Instagram entity
 func New(name string, entity crossposter.Entity) (crossposter.EntityInterface, error) {
 	client := goinsta.New(
-		entity.Key,
-		entity.KeySecret,
+		entity.Options["user"],
+		entity.Options["password"],
 	)
 	if err := client.Login(); err != nil {
 		return nil, fmt.Errorf("failed to login: %v", err)

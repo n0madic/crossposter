@@ -28,7 +28,7 @@ func New(name string, entity crossposter.Entity) (crossposter.EntityInterface, e
 		feed: &feeds.Feed{
 			Title:       name,
 			Description: entity.Description,
-			Link:        &feeds.Link{Href: entity.URL},
+			Link:        &feeds.Link{Href: entity.Options["url"]},
 		},
 	}
 	http.HandleFunc("/rss/"+name, rss.Handler)

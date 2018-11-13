@@ -30,13 +30,13 @@ func init() {
 func New(name string, entity crossposter.Entity) (crossposter.EntityInterface, error) {
 	var client *vkapi.VKClient
 	var err error
-	if entity.Token != "" {
-		client, err = vkapi.NewVKClientWithToken(entity.Token, &vkapi.TokenOptions{
+	if token, ok := entity.Options["token"]; ok {
+		client, err = vkapi.NewVKClientWithToken(token, &vkapi.TokenOptions{
 			ValidateOnStart: true,
 			ServiceToken:    true,
 		})
 	} else {
-		client, err = vkapi.NewVKClient(vkapi.DeviceAndroid, entity.Key, entity.KeySecret)
+		client, err = vkapi.NewVKClient(vkapi.DeviceAndroid, entity.Options["user"], entity.Options["password"])
 	}
 	if err != nil {
 		return nil, err

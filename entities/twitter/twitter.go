@@ -30,10 +30,10 @@ func init() {
 // New return Twitter entity
 func New(name string, entity crossposter.Entity) (crossposter.EntityInterface, error) {
 	client := anaconda.NewTwitterApiWithCredentials(
-		entity.Token,
-		entity.TokenSecret,
-		entity.Key,
-		entity.KeySecret,
+		entity.Options["token"],
+		entity.Options["token_secret"],
+		entity.Options["key"],
+		entity.Options["key_secret"],
 	)
 	if client == nil {
 		return nil, fmt.Errorf("can't create new TwitterAPI")

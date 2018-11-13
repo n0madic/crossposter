@@ -20,13 +20,9 @@ type (
 
 	// Entity type
 	Entity struct {
-		Type        string `json:"type" yaml:"type"`
-		Description string `json:"description" yaml:"description"`
-		URL         string `json:"url" yaml:"url"`
-		Key         string `json:"key" yaml:"key"`
-		KeySecret   string `json:"key_secret" yaml:"key_secret"`
-		Token       string `json:"token" yaml:"token"`
-		TokenSecret string `json:"token_secret" yaml:"token_secret"`
+		Type        string            `json:"type" yaml:"type"`
+		Description string            `json:"description" yaml:"description"`
+		Options     map[string]string `json:"options" yaml:"options"`
 	}
 
 	// EntityInterface is interface
