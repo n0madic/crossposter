@@ -32,7 +32,7 @@ func init() {
 	flag.StringVar(&configJSON, "config", "config.yaml", "Config file")
 	flag.StringVar(&lastUpdateStr, "last", time.Now().Format(timeLayout), "Initial date for update")
 	flag.BoolVar(&dontPost, "dontpost", false, "Do not post on targets")
-	flag.Int64Var(&defaultWaitTime, "waittime", 10, "Default wait time duration in minutes")
+	flag.Int64Var(&defaultWaitTime, "waittime", 5, "Default wait time duration in minutes")
 	flag.StringVar(&bindHost, "bind", ":8000", "Bind address")
 }
 
