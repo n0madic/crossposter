@@ -84,6 +84,12 @@ func main() {
 		if _, ok := cfg.Entities[cfg.Sources[source].Entity]; !ok {
 			log.Fatalf("Not found entity '%s' for source '%s'", cfg.Sources[source].Entity, source)
 		}
+		for _, target := range cfg.Sources[source].Destinations {
+			if _, ok := entities[target]; !ok {
+				log.Fatalf("Not found target entity '%s' for source '%s'", target, source)
+			}
+		}
+
 		wg.Add(1)
 		go func(source string) {
 			defer wg.Done()
@@ -109,22 +115,19 @@ func main() {
 				for _, post := range posts {
 					if post.Date.After(LastUpdate) {
 						for _, target := range cfg.Sources[source].Destinations {
-							if targetEntity, ok := entities[target]; ok {
-								logMessage := fmt.Sprintf("Post from [%s] %s to [%s] %s", entityType, source, cfg.Entities[target].Type, target)
-								if !dontPost {
-									msg, err := targetEntity.Post(target, &post)
-									if err != nil {
-										log.Printf("%s error: %s", logMessage, err)
-									} else {
-										LastUpdate = post.Date
-										log.Printf("%s: %s", logMessage, msg)
-									}
+							logMessage := fmt.Sprintf("Post from [%s] %s to [%s] %s", entityType, source, cfg.Entities[target].Type, target)
+							if !dontPost {
+								msg, err := entities[target].Post(target, &post)
+								if err != nil {
+									log.Printf("%s error: %s", logMessage, err)
 								} else {
-									log.Printf("%s skipped!", logMessage)
+									LastUpdate = post.Date
+									log.Printf("%s: %s", logMessage, msg)
 								}
 							} else {
-								log.Fatalf("Not found target entity '%s' for source '%s'", target, source)
+								log.Printf("%s skipped!", logMessage)
 							}
+
 						}
 					}
 				}
