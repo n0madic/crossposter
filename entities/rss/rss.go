@@ -12,6 +12,7 @@ import (
 )
 
 const maxTitleLength = 50
+const maxItemsInFeed = 10
 
 // RSS entity
 type RSS struct {
@@ -82,6 +83,10 @@ func (rss *RSS) Post(name string, post *crossposter.Post) (string, error) {
 	}
 	if post.More || title == "" {
 		description += " " + post.URL
+	}
+
+	if len(rss.feed.Items) == maxItemsInFeed {
+		rss.feed.Items = rss.feed.Items[1:]
 	}
 
 	rss.feed.Add(&feeds.Item{
