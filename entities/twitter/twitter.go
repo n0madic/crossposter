@@ -84,7 +84,7 @@ func (tw *Twitter) Post(name string, post *crossposter.Post) (string, error) {
 	}
 
 	for index, attach := range post.Attachments {
-		if b64, err := utils.GetURLContentInBase64(attach); err != nil {
+		if b64, err := utils.GetURLContentInBase64(attach); err == nil {
 			media, err := tw.client.UploadMedia(b64)
 			if err != nil {
 				return "", err
