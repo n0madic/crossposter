@@ -130,7 +130,7 @@ func (vk *Vk) Post(post crossposter.Post) {
 		return
 	}
 	if screenName.ObjectID == 0 {
-		log.Errorf("public %s not found\n", vk.name)
+		log.Errorf("public %s not found", vk.name)
 	}
 
 	for _, attach := range post.Attachments {
@@ -167,7 +167,7 @@ func (vk *Vk) Post(post crossposter.Post) {
 	if err != nil {
 		log.Error(err)
 	} else {
-		log.Printf("Posted in VK https://vk.com/wall-%v_%v\n", screenName.ObjectID, postID)
+		log.Printf("Posted in VK https://vk.com/wall-%v_%v", screenName.ObjectID, postID)
 	}
 }
 

@@ -87,7 +87,7 @@ func (inst *Instagram) Post(post crossposter.Post) {
 		defer res.Body.Close()
 
 		if res.StatusCode != http.StatusOK {
-			log.Errorf("bad status: %s\n", res.Status)
+			log.Errorf("bad status: %s", res.Status)
 		}
 
 		caption := post.Text
@@ -99,7 +99,7 @@ func (inst *Instagram) Post(post crossposter.Post) {
 		if err != nil {
 			log.Error(err)
 		} else {
-			log.Printf("Posted https://www.instagram.com/p/%s\n", item.Code)
+			log.Printf("Posted https://www.instagram.com/p/%s", item.Code)
 		}
 	}
 }

@@ -44,7 +44,7 @@ func main() {
 
 	lastUpdate, err = time.Parse(timeLayout, lastUpdateStr)
 	if err != nil {
-		log.Fatalf("Can't parse last update time: %s\n", err)
+		log.Fatalf("Can't parse last update time: %s", err)
 	}
 
 	for _, entity := range cfg.Entities {

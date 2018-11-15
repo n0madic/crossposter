@@ -125,7 +125,7 @@ func (tw *Twitter) Post(post crossposter.Post) {
 	if err != nil {
 		log.Error(err)
 	} else {
-		log.Printf("Posted tweet https://twitter.com/%s/status/%s\n", result.User.ScreenName, result.IdStr)
+		log.Printf("Posted tweet https://twitter.com/%s/status/%s", result.User.ScreenName, result.IdStr)
 	}
 }
 
