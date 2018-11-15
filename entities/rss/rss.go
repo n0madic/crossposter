@@ -2,7 +2,6 @@ package rss
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"sort"
 	"strings"
@@ -12,6 +11,7 @@ import (
 	"github.com/mmcdole/gofeed"
 	"github.com/n0madic/crossposter"
 	"github.com/n0madic/crossposter/utils"
+	log "github.com/sirupsen/logrus"
 )
 
 const maxTitleLength = 50
@@ -52,7 +52,7 @@ func (rss *RSS) Get(source string, lastUpdate time.Time) {
 		log.Printf("Check updates for [%s] %s", rss.entity.Type, source)
 		sourceFeed, err := fp.ParseURL(source)
 		if err != nil {
-			log.Println(err)
+			log.Error(err)
 		}
 
 		sort.Slice(sourceFeed.Items, func(i, j int) bool {

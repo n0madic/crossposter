@@ -2,7 +2,6 @@ package twitter
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -11,10 +10,10 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/ChimeraCoder/anaconda"
 	"github.com/n0madic/crossposter"
 	"github.com/n0madic/crossposter/utils"
-
-	"github.com/ChimeraCoder/anaconda"
+	log "github.com/sirupsen/logrus"
 )
 
 const shortURLLength = 23
@@ -57,7 +56,7 @@ func (tw *Twitter) Get(screenName string, lastUpdate time.Time) {
 
 		tweets, err := tw.client.GetUserTimeline(v)
 		if err != nil {
-			log.Println(err)
+			log.Error(err)
 			return
 		}
 
@@ -107,12 +106,12 @@ func (tw *Twitter) Post(post crossposter.Post) {
 		if b64, err := utils.GetURLContentInBase64(attach); err == nil {
 			media, err := tw.client.UploadMedia(b64)
 			if err != nil {
-				log.Println(err)
+				log.Error(err)
 				return
 			}
 			mediaIDs = append(mediaIDs, media.MediaIDString)
 		} else {
-			log.Println(err)
+			log.Error(err)
 			return
 		}
 		if index == maxPhotoLimit-1 {
@@ -124,7 +123,7 @@ func (tw *Twitter) Post(post crossposter.Post) {
 	v.Set("media_ids", strings.Join(mediaIDs[:], ","))
 	result, err := tw.client.PostTweet(strings.TrimSpace(status), v)
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 	} else {
 		log.Printf("Posted tweet https://twitter.com/%s/status/%s\n", result.User.ScreenName, result.IdStr)
 	}

@@ -2,7 +2,6 @@ package vk
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -15,6 +14,7 @@ import (
 	vkapi "github.com/himidori/golang-vk-api"
 	"github.com/n0madic/crossposter"
 	"github.com/n0madic/crossposter/utils"
+	log "github.com/sirupsen/logrus"
 )
 
 // Vk entity
@@ -56,7 +56,7 @@ func (vk *Vk) Get(domain string, lastUpdate time.Time) {
 		log.Printf("Check updates for [%s] %s", vk.entity.Type, domain)
 		Items, err := vk.client.WallGet(domain, 10, nil)
 		if err != nil {
-			log.Println(err)
+			log.Error(err)
 			return
 		}
 
@@ -99,7 +99,7 @@ func (vk *Vk) Get(domain string, lastUpdate time.Time) {
 					}
 					author, err := getNameFromID(vk.client, item.FromID)
 					if err != nil {
-						log.Println(err)
+						log.Error(err)
 						return
 					}
 					post := crossposter.Post{
@@ -126,30 +126,30 @@ func (vk *Vk) Post(post crossposter.Post) {
 
 	screenName, err := vk.client.ResolveScreenName(vk.name)
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 		return
 	}
 	if screenName.ObjectID == 0 {
-		log.Printf("public %s not found\n", vk.name)
+		log.Errorf("public %s not found\n", vk.name)
 	}
 
 	for _, attach := range post.Attachments {
 		filePath := path.Join(os.TempDir(), path.Base(attach))
 		err := utils.DownloadFile(attach, filePath)
 		if err != nil {
-			log.Println(err)
+			log.Error(err)
 			return
 		}
 
 		media, err := vk.client.UploadGroupWallPhotos(screenName.ObjectID, []string{filePath})
 		if err != nil {
-			log.Println(err)
+			log.Error(err)
 			return
 		}
 
 		err = os.Remove(filePath)
 		if err != nil {
-			log.Println(err)
+			log.Error(err)
 			return
 		}
 		mediaIDs = append(mediaIDs, vk.client.GetPhotosString(media))
@@ -165,7 +165,7 @@ func (vk *Vk) Post(post crossposter.Post) {
 	}
 	postID, err := vk.client.WallPost(screenName.ObjectID, message, params)
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 	} else {
 		log.Printf("Posted in VK https://vk.com/wall-%v_%v\n", screenName.ObjectID, postID)
 	}

@@ -2,12 +2,12 @@ package instagram
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"sort"
 	"time"
 
 	"github.com/n0madic/crossposter"
+	log "github.com/sirupsen/logrus"
 	goinsta "gopkg.in/ahmdrz/goinsta.v2"
 )
 
@@ -41,7 +41,7 @@ func (inst *Instagram) Get(name string, lastUpdate time.Time) {
 		log.Printf("Check updates for [%s] %s", inst.entity.Type, name)
 		user, err := inst.client.Profiles.ByName(name)
 		if err != nil {
-			log.Println(err)
+			log.Error(err)
 		}
 
 		media := user.Feed()
@@ -81,13 +81,13 @@ func (inst *Instagram) Post(post crossposter.Post) {
 	for _, attach := range post.Attachments {
 		res, err := http.Get(attach)
 		if err != nil {
-			log.Println(err)
+			log.Error(err)
 			return
 		}
 		defer res.Body.Close()
 
 		if res.StatusCode != http.StatusOK {
-			log.Printf("bad status: %s\n", res.Status)
+			log.Errorf("bad status: %s\n", res.Status)
 		}
 
 		caption := post.Text
@@ -97,7 +97,7 @@ func (inst *Instagram) Post(post crossposter.Post) {
 
 		item, err := inst.client.UploadPhoto(res.Body, caption, 82, 0)
 		if err != nil {
-			log.Println(err)
+			log.Error(err)
 		} else {
 			log.Printf("Posted https://www.instagram.com/p/%s\n", item.Code)
 		}

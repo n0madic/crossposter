@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"flag"
 	"html/template"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -12,6 +11,7 @@ import (
 	"github.com/n0madic/crossposter"
 	"github.com/n0madic/crossposter/config"
 	_ "github.com/n0madic/crossposter/entities"
+	log "github.com/sirupsen/logrus"
 )
 
 const timeLayout = "2006-01-02T15:04:05"
@@ -25,6 +25,10 @@ var (
 )
 
 func init() {
+	log.SetFormatter(&log.TextFormatter{
+		FullTimestamp:          true,
+		DisableLevelTruncation: true,
+	})
 	flag.StringVar(&configYAML, "config", "config.yaml", "Config file")
 	flag.StringVar(&lastUpdateStr, "last", time.Now().Format(timeLayout), "Initial date for update")
 	flag.BoolVar(&dontPost, "dontpost", false, "Do not produce posts")
