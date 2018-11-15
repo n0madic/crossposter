@@ -173,20 +173,20 @@ func GetMaxPreview(v vkapi.VideoAttachment) string {
 	if v.Photo800 != "" {
 		return v.Photo800
 	}
-	if v.Photo320 != "" {
-		return v.Photo320
-	}
-	if v.Photo130 != "" {
-		return v.Photo130
-	}
 	if v.FirstFrame800 != "" {
 		return v.FirstFrame800
+	}
+	if v.Photo320 != "" {
+		return v.Photo320
 	}
 	if v.FirstFrame320 != "" {
 		return v.FirstFrame320
 	}
 	if v.FirstFrame160 != "" {
 		return v.FirstFrame160
+	}
+	if v.Photo130 != "" {
+		return v.Photo130
 	}
 	if v.FirstFrame130 != "" {
 		return v.FirstFrame130
