@@ -61,6 +61,8 @@ func main() {
 			for _, topic := range entity.Topics {
 				crossposter.Events.SubscribeAsync(topic, newEntity.Post, true)
 			}
+		default:
+			log.Fatalf("%s role is not supported", entity.Role)
 		}
 	}
 
