@@ -71,6 +71,9 @@ func (vk *Vk) Get(domain string, lastUpdate time.Time) {
 				timestamp := time.Unix(item.Date, 0)
 				if timestamp.After(lastUpdate) {
 					lastUpdate = timestamp
+					if item.CopyHistory != nil {
+						item = item.CopyHistory[0]
+					}
 					var photos []string
 					var needMore bool
 					if item.Attachments != nil {
