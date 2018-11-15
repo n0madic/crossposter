@@ -2,12 +2,12 @@ package main
 
 import (
 	"bytes"
-	"flag"
 	"html/template"
 	"net/http"
 	"strings"
 	"time"
 
+	arg "github.com/alexflint/go-arg"
 	"github.com/n0madic/crossposter"
 	"github.com/n0madic/crossposter/config"
 	_ "github.com/n0madic/crossposter/entities"
@@ -17,11 +17,13 @@ import (
 const timeLayout = "2006-01-02T15:04:05"
 
 var (
-	bindHost      string
-	configYAML    string
-	dontPost      bool
-	lastUpdate    time.Time
-	lastUpdateStr string
+	args struct {
+		Bind     string `arg:"-b,env" help:"Bind address"`
+		Config   string `arg:"env" help:"Config file"`
+		DontPost bool   `arg:"-d,env" help:"Do not produce posts"`
+		Last     string `arg:"-l,env" help:"Initial date for update"`
+	}
+	lastUpdate time.Time
 )
 
 func init() {
@@ -29,26 +31,26 @@ func init() {
 		FullTimestamp:          true,
 		DisableLevelTruncation: true,
 	})
-	flag.StringVar(&configYAML, "config", "config.yaml", "Config file")
-	flag.StringVar(&lastUpdateStr, "last", time.Now().Format(timeLayout), "Initial date for update")
-	flag.BoolVar(&dontPost, "dontpost", false, "Do not produce posts")
-	flag.StringVar(&bindHost, "bind", ":8000", "Bind address")
 }
 
 func main() {
-	flag.Parse()
-	cfg, err := config.New(configYAML)
+	args.Bind = ":8000"
+	args.Config = "config.yaml"
+	args.Last = time.Now().Format(timeLayout)
+	arg.MustParse(&args)
+
+	cfg, err := config.New(args.Config)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	lastUpdate, err = time.Parse(timeLayout, lastUpdateStr)
+	lastUpdate, err = time.Parse(timeLayout, args.Last)
 	if err != nil {
 		log.Fatalf("Can't parse last update time: %s", err)
 	}
 
 	for _, entity := range cfg.Entities {
-		if dontPost {
+		if args.DontPost {
 			entity.Topics = []string{}
 		}
 		newEntity, err := crossposter.Initializers[entity.Type](entity)
@@ -88,7 +90,7 @@ func main() {
 	})
 
 	go func() {
-		log.Fatal(http.ListenAndServe(bindHost, nil))
+		log.Fatal(http.ListenAndServe(args.Bind, nil))
 	}()
 
 	crossposter.WaitGroup.Wait()
