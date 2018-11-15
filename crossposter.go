@@ -2,8 +2,14 @@ package crossposter
 
 import (
 	"net/http"
+	"sync"
 	"time"
+
+	"github.com/asaskevich/EventBus"
 )
+
+// WaitTime default wait time
+const WaitTime = 5
 
 type (
 
@@ -20,25 +26,35 @@ type (
 
 	// Entity type
 	Entity struct {
-		Type        string            `json:"type" yaml:"type"`
-		Description string            `json:"description" yaml:"description"`
-		Options     map[string]string `json:"options" yaml:"options"`
+		Type         string            `json:"type" yaml:"type"`
+		Role         string            `json:"role" yaml:"role"`
+		Description  string            `json:"description" yaml:"description"`
+		Options      map[string]string `json:"options" yaml:"options"`
+		Sources      []string          `json:"sources" yaml:"sources"`
+		Destinations []string          `json:"destinations" yaml:"destinations"`
+		Topics       []string          `json:"topics" yaml:"topics"`
 	}
 
 	// EntityInterface is interface
 	EntityInterface interface {
-		Get(name string) ([]Post, error)
-		Post(name string, post *Post) (string, error)
+		Get(name string, lastUpdate time.Time)
+		Post(post Post)
 		Handler(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Initializer of entity
-	Initializer func(name string, entity Entity) (EntityInterface, error)
+	Initializer func(entity Entity) (EntityInterface, error)
 )
 
 var (
 	// Initializers of entities
 	Initializers = make(map[string]Initializer)
+
+	// Events bus
+	Events = EventBus.New()
+
+	// WaitGroup global
+	WaitGroup sync.WaitGroup
 )
 
 // AddEntity add initializer

@@ -2,8 +2,9 @@ package instagram
 
 import (
 	"fmt"
+	"log"
 	"net/http"
-	"strings"
+	"sort"
 	"time"
 
 	"github.com/n0madic/crossposter"
@@ -12,6 +13,7 @@ import (
 
 // Instagram entity
 type Instagram struct {
+	entity *crossposter.Entity
 	client *goinsta.Instagram
 }
 
@@ -20,7 +22,7 @@ func init() {
 }
 
 // New return Instagram entity
-func New(name string, entity crossposter.Entity) (crossposter.EntityInterface, error) {
+func New(entity crossposter.Entity) (crossposter.EntityInterface, error) {
 	client := goinsta.New(
 		entity.Options["user"],
 		entity.Options["password"],
@@ -28,48 +30,64 @@ func New(name string, entity crossposter.Entity) (crossposter.EntityInterface, e
 	if err := client.Login(); err != nil {
 		return nil, fmt.Errorf("failed to login: %v", err)
 	}
-	return &Instagram{client}, nil
+	return &Instagram{&entity, client}, nil
 }
 
 // Get user's feed from Instagram
-func (inst *Instagram) Get(name string) ([]crossposter.Post, error) {
-	user, err := inst.client.Profiles.ByName(name)
-	if err != nil {
-		return nil, err
-	}
+func (inst *Instagram) Get(name string, lastUpdate time.Time) {
+	defer crossposter.WaitGroup.Done()
 
-	var posts []crossposter.Post
+	for {
+		log.Printf("Check updates for [%s] %s", inst.entity.Type, name)
+		user, err := inst.client.Profiles.ByName(name)
+		if err != nil {
+			log.Println(err)
+		}
 
-	media := user.Feed()
-	media.Next()
+		media := user.Feed()
+		media.Next()
 
-	for _, item := range media.Items {
-		posts = append(posts, crossposter.Post{
-			Date:        time.Unix(int64(item.TakenAt), 0),
-			URL:         fmt.Sprintf("https://www.instagram.com/p/%s", item.Code),
-			Author:      user.FullName,
-			Text:        item.Caption.Text,
-			Attachments: []string{item.Images.GetBest()},
-			More:        item.MediaToString() != "photo",
+		sort.Slice(media.Items, func(i, j int) bool {
+			itime := time.Unix(int64(media.Items[i].TakenAt), 0)
+			jtime := time.Unix(int64(media.Items[j].TakenAt), 0)
+			return itime.Before(jtime)
 		})
-	}
 
-	return posts, nil
+		for _, item := range media.Items {
+			itime := time.Unix(int64(item.TakenAt), 0)
+			if itime.After(lastUpdate) {
+				lastUpdate = itime
+				// TODO: implement CarouselMedia
+				post := crossposter.Post{
+					Date:        time.Unix(int64(item.TakenAt), 0),
+					URL:         fmt.Sprintf("https://www.instagram.com/p/%s", item.Code),
+					Author:      user.FullName,
+					Text:        item.Caption.Text,
+					Attachments: []string{item.Images.GetBest()},
+					More:        item.MediaToString() != "photo",
+				}
+				for _, topic := range inst.entity.Topics {
+					crossposter.Events.Publish(topic, post)
+				}
+
+			}
+		}
+		time.Sleep(time.Duration(crossposter.WaitTime) * time.Minute)
+	}
 }
 
 // Post media to Instagram
-func (inst *Instagram) Post(name string, post *crossposter.Post) (string, error) {
-	var mediaURLs []string
-
+func (inst *Instagram) Post(post crossposter.Post) {
 	for _, attach := range post.Attachments {
 		res, err := http.Get(attach)
 		if err != nil {
-			return "", err
+			log.Println(err)
+			return
 		}
 		defer res.Body.Close()
 
 		if res.StatusCode != http.StatusOK {
-			return "", fmt.Errorf("bad status: %s", res.Status)
+			log.Printf("bad status: %s\n", res.Status)
 		}
 
 		caption := post.Text
@@ -79,12 +97,11 @@ func (inst *Instagram) Post(name string, post *crossposter.Post) (string, error)
 
 		item, err := inst.client.UploadPhoto(res.Body, caption, 82, 0)
 		if err != nil {
-			return "", err
+			log.Println(err)
+		} else {
+			log.Printf("Posted https://www.instagram.com/p/%s\n", item.Code)
 		}
-		mediaURLs = append(mediaURLs, fmt.Sprintf("https://www.instagram.com/p/%s", item.Code))
 	}
-
-	return strings.Join(mediaURLs, " "), nil
 }
 
 // Handler not implemented

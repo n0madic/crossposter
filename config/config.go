@@ -3,20 +3,13 @@ package config
 import (
 	"io/ioutil"
 
-	yaml "gopkg.in/yaml.v2"
-
 	"github.com/n0madic/crossposter"
+	yaml "gopkg.in/yaml.v2"
 )
 
 // Config struct
 type Config struct {
-	Entities map[string]crossposter.Entity
-	Sources  map[string]struct {
-		Description  string   `yaml:"description"`
-		Entity       string   `yaml:"entity"`
-		Waiting      int64    `yaml:"waiting"`
-		Destinations []string `yaml:"destinations"`
-	} `yaml:"sources"`
+	Entities []crossposter.Entity
 	filename string
 }
 

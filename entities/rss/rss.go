@@ -2,8 +2,11 @@ package rss
 
 import (
 	"fmt"
+	"log"
 	"net/http"
+	"sort"
 	"strings"
+	"time"
 
 	"github.com/gorilla/feeds"
 	"github.com/mmcdole/gofeed"
@@ -16,62 +19,82 @@ const maxItemsInFeed = 10
 
 // RSS entity
 type RSS struct {
-	feed *feeds.Feed
+	entity *crossposter.Entity
+	feed   *feeds.Feed
 }
 
 func init() {
 	crossposter.AddEntity("rss", New)
 }
 
-// New return RSS entity
-func New(name string, entity crossposter.Entity) (crossposter.EntityInterface, error) {
+// New run RSS entity
+func New(entity crossposter.Entity) (crossposter.EntityInterface, error) {
 	rss := &RSS{
+		entity: &entity,
 		feed: &feeds.Feed{
-			Title:       name,
+			Title:       entity.Options["title"],
 			Description: entity.Description,
-			Link:        &feeds.Link{Href: entity.Options["url"]},
+			Link:        &feeds.Link{Href: entity.Options["link"]},
 		},
 	}
-	http.HandleFunc("/rss/"+name, rss.Handler)
+	for _, destination := range entity.Destinations {
+		http.HandleFunc("/rss/"+destination, rss.Handler)
+	}
 	return rss, nil
 }
 
 // Get items from RSS
-func (rss *RSS) Get(name string) ([]crossposter.Post, error) {
+func (rss *RSS) Get(source string, lastUpdate time.Time) {
+	defer crossposter.WaitGroup.Done()
 	fp := gofeed.NewParser()
-	sourceFeed, err := fp.ParseURL(rss.feed.Link.Href)
-	if err != nil {
-		return nil, err
-	}
 
-	var posts []crossposter.Post
-	mediaURLs := []string{}
-
-	for _, item := range sourceFeed.Items {
-		if item.Image != nil && item.Image.URL != "" {
-			mediaURLs = append(mediaURLs, item.Image.URL)
+	for {
+		log.Printf("Check updates for [%s] %s", rss.entity.Type, source)
+		sourceFeed, err := fp.ParseURL(source)
+		if err != nil {
+			log.Println(err)
 		}
-		for _, enclosure := range item.Enclosures {
-			if strings.HasPrefix(enclosure.Type, "image/") {
-				mediaURLs = append(mediaURLs, enclosure.URL)
+
+		sort.Slice(sourceFeed.Items, func(i, j int) bool {
+			return sourceFeed.Items[i].PublishedParsed.Before(*sourceFeed.Items[j].PublishedParsed)
+		})
+
+		mediaURLs := []string{}
+		for _, item := range sourceFeed.Items {
+			if item.PublishedParsed.After(lastUpdate) {
+				lastUpdate = *item.PublishedParsed
+				if item.Image != nil && item.Image.URL != "" {
+					mediaURLs = append(mediaURLs, item.Image.URL)
+				}
+				for _, enclosure := range item.Enclosures {
+					if strings.HasPrefix(enclosure.Type, "image/") {
+						mediaURLs = append(mediaURLs, enclosure.URL)
+					}
+				}
+				author := ""
+				if item.Author != nil {
+					author = item.Author.Name
+				}
+				post := &crossposter.Post{
+					Date:        *item.PublishedParsed,
+					URL:         item.Link,
+					Author:      author,
+					Title:       item.Title,
+					Text:        item.Description,
+					Attachments: mediaURLs,
+					More:        false,
+				}
+				for _, topic := range rss.entity.Topics {
+					crossposter.Events.Publish(topic, post)
+				}
 			}
 		}
-		posts = append(posts, crossposter.Post{
-			Date:        *item.PublishedParsed,
-			URL:         item.Link,
-			Author:      item.Author.Name,
-			Title:       item.Title,
-			Text:        item.Description,
-			Attachments: mediaURLs,
-			More:        false,
-		})
+		time.Sleep(time.Duration(crossposter.WaitTime) * time.Minute)
 	}
-
-	return posts, nil
 }
 
 // Post add item to RSS feed
-func (rss *RSS) Post(name string, post *crossposter.Post) (string, error) {
+func (rss *RSS) Post(post crossposter.Post) {
 	title := post.Title
 	if title == "" {
 		title = utils.TruncateText(post.Text, maxTitleLength)
@@ -96,7 +119,6 @@ func (rss *RSS) Post(name string, post *crossposter.Post) (string, error) {
 		Author:      &feeds.Author{Name: post.Author},
 		Created:     post.Date,
 	})
-	return "/rss/" + name, nil
 }
 
 // Handler return RSS XML

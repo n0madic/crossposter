@@ -18,23 +18,28 @@ const indexTpl = `<!DOCTYPE html>
         <p class="lead">Routing posts between different sources</p>
     </div>
     <div class="card bg-light">
-        <h5 class="card-header"> Available routes </h5>
+        <h5 class="card-header"> Available pipelines </h5>
         <div class="card-body">
             <table class="table table-hover">
               <thead class="thead-light">
                 <tr>
-                    <th>Sources</th>
-                    <th>Destinations</th>
+                    <th>Role</th>
+                    <th>Entity</th>
+                    <th>Sources/Destinations</th>
                 </tr>
               </thead>
-              {{range $key, $value := .Sources}}
+              {{- range $entity := .Entities}}
                 <tr>
-                    <td>[{{ $value.Entity }}] {{ $value.Description }} ({{ $key }})<br></td>
-                    <td>{{ range $dest := $value.Destinations }}
-                            [{{ (index $.Entities $dest).Type }}] {{ (index $.Entities $dest).Description }} ({{ $dest }})<br>
-                    {{end}}</td>
+                <td>{{ $entity.Role }}</td>
+                <td>[{{ $entity.Type }}] {{ $entity.Description }}</td>
+                {{- if eq $entity.Role "producer" -}}
+                <td>{{ StringsJoin $entity.Sources "<br>" }}</td>
+                {{- end }}
+                {{- if eq $entity.Role "consumer" -}}
+                <td>{{ StringsJoin $entity.Destinations "<br>" }}</td>
+                {{- end }}
                 </tr>
-              {{end}}
+              {{- end }}
             </table>
         </div> <!-- card-body -->
     </div> <!-- card -->

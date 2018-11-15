@@ -2,10 +2,12 @@ package vk
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"path"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -17,7 +19,9 @@ import (
 
 // Vk entity
 type Vk struct {
+	entity *crossposter.Entity
 	client *vkapi.VKClient
+	name   string
 }
 
 var userMap sync.Map
@@ -27,7 +31,7 @@ func init() {
 }
 
 // New return Vk entity
-func New(name string, entity crossposter.Entity) (crossposter.EntityInterface, error) {
+func New(entity crossposter.Entity) (crossposter.EntityInterface, error) {
 	var client *vkapi.VKClient
 	var err error
 	if token, ok := entity.Options["token"]; ok {
@@ -41,86 +45,109 @@ func New(name string, entity crossposter.Entity) (crossposter.EntityInterface, e
 	if err != nil {
 		return nil, err
 	}
-	return &Vk{client}, nil
+	return &Vk{&entity, client, entity.Options["name"]}, nil
 }
 
 // Get posts from Vk wall
-func (vk *Vk) Get(domain string) ([]crossposter.Post, error) {
-	var posts []crossposter.Post
-	Items, err := vk.client.WallGet(domain, 10, nil)
-	if err != nil {
-		return nil, err
-	}
-	for _, item := range Items.Posts {
-		if item.MarkedAsAd == 0 {
-			var photos []string
-			var needMore bool
-			if item.Attachments != nil {
-				if len(item.Attachments) > 1 {
-					needMore = true
-				}
-				for _, attach := range item.Attachments {
-					switch attach.Type {
-					case "photo":
-						photos = append(photos, GetMaxSizePhoto(*attach.Photo))
-					case "video":
-						photos = append(photos, GetMaxPreview(*attach.Video))
-						needMore = true
-					case "doc":
-						if attach.Document.Type == 3 { // GIF
-							photos = append(photos, attach.Document.URL)
-							break
+func (vk *Vk) Get(domain string, lastUpdate time.Time) {
+	defer crossposter.WaitGroup.Done()
+
+	for {
+		log.Printf("Check updates for [%s] %s", vk.entity.Type, domain)
+		Items, err := vk.client.WallGet(domain, 10, nil)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		sort.Slice(Items.Posts, func(i, j int) bool {
+			itime := time.Unix(Items.Posts[i].Date, 0)
+			jtime := time.Unix(Items.Posts[j].Date, 0)
+			return itime.Before(jtime)
+		})
+
+		for _, item := range Items.Posts {
+			if item.MarkedAsAd == 0 {
+				timestamp := time.Unix(item.Date, 0)
+				if timestamp.After(lastUpdate) {
+					lastUpdate = timestamp
+					var photos []string
+					var needMore bool
+					if item.Attachments != nil {
+						if len(item.Attachments) > 1 {
+							needMore = true
 						}
-					default:
-						needMore = true
+						for _, attach := range item.Attachments {
+							switch attach.Type {
+							case "photo":
+								photos = append(photos, GetMaxSizePhoto(*attach.Photo))
+							case "video":
+								photos = append(photos, GetMaxPreview(*attach.Video))
+								needMore = true
+							case "doc":
+								if attach.Document.Type == 3 { // GIF
+									photos = append(photos, attach.Document.URL)
+									break
+								}
+							default:
+								needMore = true
+							}
+						}
+					}
+					author, err := getNameFromID(vk.client, item.FromID)
+					if err != nil {
+						log.Println(err)
+						return
+					}
+					post := crossposter.Post{
+						Date:        timestamp,
+						URL:         fmt.Sprintf("https://vk.com/wall%v_%v", item.FromID, item.ID),
+						Author:      author,
+						Text:        item.Text,
+						Attachments: photos,
+						More:        needMore,
+					}
+					for _, topic := range vk.entity.Topics {
+						crossposter.Events.Publish(topic, post)
 					}
 				}
 			}
-			author, err := getNameFromID(vk.client, item.FromID)
-			if err != nil {
-				return nil, err
-			}
-			posts = append(posts, crossposter.Post{
-				Date:        time.Unix(item.Date, 0),
-				URL:         fmt.Sprintf("https://vk.com/wall%v_%v", item.FromID, item.ID),
-				Author:      author,
-				Text:        item.Text,
-				Attachments: photos,
-				More:        needMore,
-			})
 		}
+		time.Sleep(time.Duration(crossposter.WaitTime) * time.Minute)
 	}
-
-	return posts, nil
 }
 
 // Post to Vk
-func (vk *Vk) Post(name string, post *crossposter.Post) (string, error) {
+func (vk *Vk) Post(post crossposter.Post) {
 	var mediaIDs []string
 
-	screenName, err := vk.client.ResolveScreenName(name)
+	screenName, err := vk.client.ResolveScreenName(vk.name)
 	if err != nil {
-		return "", err
+		log.Println(err)
+		return
 	}
 	if screenName.ObjectID == 0 {
-		return "", fmt.Errorf("public %s not found", name)
+		log.Printf("public %s not found\n", vk.name)
 	}
 
 	for _, attach := range post.Attachments {
 		filePath := path.Join(os.TempDir(), path.Base(attach))
 		err := utils.DownloadFile(attach, filePath)
 		if err != nil {
-			return "", err
+			log.Println(err)
+			return
 		}
 
 		media, err := vk.client.UploadGroupWallPhotos(screenName.ObjectID, []string{filePath})
 		if err != nil {
-			return "", err
+			log.Println(err)
+			return
 		}
 
 		err = os.Remove(filePath)
 		if err != nil {
-			return "", err
+			log.Println(err)
+			return
 		}
 		mediaIDs = append(mediaIDs, vk.client.GetPhotosString(media))
 	}
@@ -135,10 +162,10 @@ func (vk *Vk) Post(name string, post *crossposter.Post) (string, error) {
 	}
 	postID, err := vk.client.WallPost(screenName.ObjectID, message, params)
 	if err != nil {
-		return "", err
+		log.Println(err)
+	} else {
+		log.Printf("Posted in VK https://vk.com/wall-%v_%v\n", screenName.ObjectID, postID)
 	}
-
-	return fmt.Sprintf("Posted in VK https://vk.com/wall-%v_%v", screenName.ObjectID, postID), nil
 }
 
 // Handler not implemented
