@@ -32,11 +32,15 @@ const indexTpl = `<!DOCTYPE html>
                 <tr>
                 <td>{{ $entity.Role }}</td>
                 <td>[{{ $entity.Type }}] {{ $entity.Description }}</td>
-                {{- if eq $entity.Role "producer" -}}
-                <td>{{ StringsJoin $entity.Sources "<br>" }}</td>
+                {{- if eq $entity.Role "producer" }}
+                <td>{{ range $source := $entity.Sources}}
+                {{ $source }}<br>
+                {{- end }}</td>
                 {{- end }}
                 {{- if eq $entity.Role "consumer" -}}
-                <td>{{ StringsJoin $entity.Destinations "<br>" }}</td>
+                <td>{{ range $destinations := $entity.Destinations}}
+                {{ $destinations }}<br>
+                {{- end }}</td>
                 {{- end }}
                 </tr>
               {{- end }}

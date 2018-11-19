@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"html/template"
 	"net/http"
-	"strings"
 	"time"
 
 	arg "github.com/alexflint/go-arg"
@@ -73,7 +72,7 @@ func main() {
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		t, err := template.New("index").Funcs(template.FuncMap{"StringsJoin": strings.Join}).Parse(indexTpl)
+		t, err := template.New("index").Parse(indexTpl)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
