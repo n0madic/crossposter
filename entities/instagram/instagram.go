@@ -42,34 +42,34 @@ func (inst *Instagram) Get(name string, lastUpdate time.Time) {
 		user, err := inst.client.Profiles.ByName(name)
 		if err != nil {
 			log.Error(err)
-		}
+		} else {
+			media := user.Feed()
+			media.Next()
 
-		media := user.Feed()
-		media.Next()
+			sort.Slice(media.Items, func(i, j int) bool {
+				itime := time.Unix(int64(media.Items[i].TakenAt), 0)
+				jtime := time.Unix(int64(media.Items[j].TakenAt), 0)
+				return itime.Before(jtime)
+			})
 
-		sort.Slice(media.Items, func(i, j int) bool {
-			itime := time.Unix(int64(media.Items[i].TakenAt), 0)
-			jtime := time.Unix(int64(media.Items[j].TakenAt), 0)
-			return itime.Before(jtime)
-		})
+			for _, item := range media.Items {
+				itime := time.Unix(int64(item.TakenAt), 0)
+				if itime.After(lastUpdate) {
+					lastUpdate = itime
+					// TODO: implement CarouselMedia
+					post := crossposter.Post{
+						Date:        time.Unix(int64(item.TakenAt), 0),
+						URL:         fmt.Sprintf("https://www.instagram.com/p/%s", item.Code),
+						Author:      user.FullName,
+						Text:        item.Caption.Text,
+						Attachments: []string{item.Images.GetBest()},
+						More:        item.MediaToString() != "photo",
+					}
+					for _, topic := range inst.entity.Topics {
+						crossposter.Events.Publish(topic, post)
+					}
 
-		for _, item := range media.Items {
-			itime := time.Unix(int64(item.TakenAt), 0)
-			if itime.After(lastUpdate) {
-				lastUpdate = itime
-				// TODO: implement CarouselMedia
-				post := crossposter.Post{
-					Date:        time.Unix(int64(item.TakenAt), 0),
-					URL:         fmt.Sprintf("https://www.instagram.com/p/%s", item.Code),
-					Author:      user.FullName,
-					Text:        item.Caption.Text,
-					Attachments: []string{item.Images.GetBest()},
-					More:        item.MediaToString() != "photo",
 				}
-				for _, topic := range inst.entity.Topics {
-					crossposter.Events.Publish(topic, post)
-				}
-
 			}
 		}
 		time.Sleep(time.Duration(crossposter.WaitTime) * time.Minute)

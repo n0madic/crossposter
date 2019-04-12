@@ -53,39 +53,40 @@ func (rss *RSS) Get(source string, lastUpdate time.Time) {
 		sourceFeed, err := fp.ParseURL(source)
 		if err != nil {
 			log.Error(err)
-		}
+		} else {
 
-		sort.Slice(sourceFeed.Items, func(i, j int) bool {
-			return sourceFeed.Items[i].PublishedParsed.Before(*sourceFeed.Items[j].PublishedParsed)
-		})
+			sort.Slice(sourceFeed.Items, func(i, j int) bool {
+				return sourceFeed.Items[i].PublishedParsed.Before(*sourceFeed.Items[j].PublishedParsed)
+			})
 
-		mediaURLs := []string{}
-		for _, item := range sourceFeed.Items {
-			if item.PublishedParsed.After(lastUpdate) {
-				lastUpdate = *item.PublishedParsed
-				if item.Image != nil && item.Image.URL != "" {
-					mediaURLs = append(mediaURLs, item.Image.URL)
-				}
-				for _, enclosure := range item.Enclosures {
-					if strings.HasPrefix(enclosure.Type, "image/") {
-						mediaURLs = append(mediaURLs, enclosure.URL)
+			mediaURLs := []string{}
+			for _, item := range sourceFeed.Items {
+				if item.PublishedParsed.After(lastUpdate) {
+					lastUpdate = *item.PublishedParsed
+					if item.Image != nil && item.Image.URL != "" {
+						mediaURLs = append(mediaURLs, item.Image.URL)
 					}
-				}
-				author := ""
-				if item.Author != nil {
-					author = item.Author.Name
-				}
-				post := &crossposter.Post{
-					Date:        *item.PublishedParsed,
-					URL:         item.Link,
-					Author:      author,
-					Title:       item.Title,
-					Text:        item.Description,
-					Attachments: mediaURLs,
-					More:        false,
-				}
-				for _, topic := range rss.entity.Topics {
-					crossposter.Events.Publish(topic, post)
+					for _, enclosure := range item.Enclosures {
+						if strings.HasPrefix(enclosure.Type, "image/") {
+							mediaURLs = append(mediaURLs, enclosure.URL)
+						}
+					}
+					author := ""
+					if item.Author != nil {
+						author = item.Author.Name
+					}
+					post := &crossposter.Post{
+						Date:        *item.PublishedParsed,
+						URL:         item.Link,
+						Author:      author,
+						Title:       item.Title,
+						Text:        item.Description,
+						Attachments: mediaURLs,
+						More:        false,
+					}
+					for _, topic := range rss.entity.Topics {
+						crossposter.Events.Publish(topic, post)
+					}
 				}
 			}
 		}

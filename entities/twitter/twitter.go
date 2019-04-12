@@ -57,35 +57,34 @@ func (tw *Twitter) Get(screenName string, lastUpdate time.Time) {
 		tweets, err := tw.client.GetUserTimeline(v)
 		if err != nil {
 			log.Error(err)
-			return
-		}
+		} else {
+			sort.Slice(tweets, func(i, j int) bool {
+				itime, _ := tweets[i].CreatedAtTime()
+				jtime, _ := tweets[j].CreatedAtTime()
+				return itime.Before(jtime)
+			})
 
-		sort.Slice(tweets, func(i, j int) bool {
-			itime, _ := tweets[i].CreatedAtTime()
-			jtime, _ := tweets[j].CreatedAtTime()
-			return itime.Before(jtime)
-		})
-
-		for _, tweet := range tweets {
-			timestamp, _ := tweet.CreatedAtTime()
-			if timestamp.After(lastUpdate) {
-				lastUpdate = timestamp
-				mediaURLs := []string{}
-				for _, media := range tweet.Entities.Media {
-					if media.Type == "photo" || media.Type == "animated_gif" {
-						mediaURLs = append(mediaURLs, media.Media_url_https)
+			for _, tweet := range tweets {
+				timestamp, _ := tweet.CreatedAtTime()
+				if timestamp.After(lastUpdate) {
+					lastUpdate = timestamp
+					mediaURLs := []string{}
+					for _, media := range tweet.Entities.Media {
+						if media.Type == "photo" || media.Type == "animated_gif" {
+							mediaURLs = append(mediaURLs, media.Media_url_https)
+						}
 					}
-				}
-				post := crossposter.Post{
-					Date:        timestamp,
-					URL:         fmt.Sprintf("https://twitter.com/%s/status/%s", screenName, tweet.IdStr),
-					Author:      tweet.User.ScreenName,
-					Text:        tweet.FullText,
-					Attachments: mediaURLs,
-					More:        false,
-				}
-				for _, topic := range tw.entity.Topics {
-					crossposter.Events.Publish(topic, post)
+					post := crossposter.Post{
+						Date:        timestamp,
+						URL:         fmt.Sprintf("https://twitter.com/%s/status/%s", screenName, tweet.IdStr),
+						Author:      tweet.User.ScreenName,
+						Text:        tweet.FullText,
+						Attachments: mediaURLs,
+						More:        false,
+					}
+					for _, topic := range tw.entity.Topics {
+						crossposter.Events.Publish(topic, post)
+					}
 				}
 			}
 		}
