@@ -83,9 +83,9 @@ func (vk *Vk) Get(domain string, lastUpdate time.Time) {
 						for _, attach := range item.Attachments {
 							switch attach.Type {
 							case "photo":
-								photos = append(photos, GetMaxSizePhoto(*attach.Photo))
+								photos = append(photos, getMaxSizePhoto(*attach.Photo))
 							case "video":
-								photos = append(photos, GetMaxPreview(*attach.Video))
+								photos = append(photos, getMaxPreview(*attach.Video))
 								needMore = true
 							case "doc":
 								if attach.Document.Type == 3 { // GIF
@@ -174,8 +174,8 @@ func (vk *Vk) Post(post crossposter.Post) {
 // Handler not implemented
 func (vk *Vk) Handler(w http.ResponseWriter, r *http.Request) {}
 
-// GetMaxSizePhoto from attachment
-func GetMaxSizePhoto(p vkapi.PhotoAttachment) string {
+// getMaxSizePhoto from attachment
+func getMaxSizePhoto(p vkapi.PhotoAttachment) string {
 	if p.Photo2560 != "" {
 		return p.Photo2560
 	}
@@ -198,8 +198,8 @@ func GetMaxSizePhoto(p vkapi.PhotoAttachment) string {
 	return ""
 }
 
-// GetMaxPreview from video attachment
-func GetMaxPreview(v vkapi.VideoAttachment) string {
+// getMaxPreview from video attachment
+func getMaxPreview(v vkapi.VideoAttachment) string {
 	if v.Photo800 != "" {
 		return v.Photo800
 	}
