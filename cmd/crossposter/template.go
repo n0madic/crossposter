@@ -25,23 +25,32 @@ const indexTpl = `<!DOCTYPE html>
                 <tr>
                     <th>Role</th>
                     <th>Entity</th>
+                    <th>Topics</th>
                     <th>Sources/Destinations</th>
                 </tr>
               </thead>
-              {{- range $entity := .Entities}}
+              {{- range $entity := .Producers}}
                 <tr>
-                <td>{{ $entity.Role }}</td>
+                <td>producer</td>
                 <td>[{{ $entity.Type }}] {{ $entity.Description }}</td>
-                {{- if eq $entity.Role "producer" }}
+                <td>{{ range $topic := $entity.Topics}}
+                  {{ $topic }}<br>
+                {{- end }}</td>
                 <td>{{ range $source := $entity.Sources}}
-                {{ $source }}<br>
+                  {{ $source }}<br>
                 {{- end }}</td>
-                {{- end }}
-                {{- if eq $entity.Role "consumer" -}}
+                </tr>
+              {{- end }}
+              {{- range $entity := .Consumers}}
+                <tr>
+                <td>consumer</td>
+                <td>[{{ $entity.Type }}] {{ $entity.Description }}</td>
+                <td>{{ range $topic := $entity.Topics}}
+                  {{ $topic }}<br>
+                {{- end }}</td>
                 <td>{{ range $destinations := $entity.Destinations}}
-                {{ $destinations }}<br>
+                  {{ $destinations }}<br>
                 {{- end }}</td>
-                {{- end }}
                 </tr>
               {{- end }}
             </table>
