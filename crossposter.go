@@ -27,7 +27,6 @@ type (
 	// Entity type
 	Entity struct {
 		Type         string            `json:"type" yaml:"type"`
-		Role         string            `json:"role" yaml:"role"`
 		Description  string            `json:"description" yaml:"description"`
 		Options      map[string]string `json:"options" yaml:"options"`
 		Sources      []string          `json:"sources" yaml:"sources"`

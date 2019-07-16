@@ -48,26 +48,27 @@ func main() {
 		log.Fatalf("Can't parse last update time: %s", err)
 	}
 
-	for _, entity := range cfg.Entities {
+	for _, consumer := range cfg.Consumers {
 		if args.DontPost {
-			entity.Topics = []string{}
+			consumer.Topics = []string{}
 		}
-		newEntity, err := crossposter.Initializers[entity.Type](entity)
+		newConsumer, err := crossposter.Initializers[consumer.Type](consumer)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		switch entity.Role {
-		case "producer":
-			for _, source := range entity.Sources {
-				crossposter.WaitGroup.Add(1)
-				go newEntity.Get(source, lastUpdate)
-			}
-		case "consumer":
-			for _, topic := range entity.Topics {
-				crossposter.Events.SubscribeAsync(topic, newEntity.Post, true)
-			}
-		default:
-			log.Fatalf("%s role is not supported", entity.Role)
+		for _, topic := range consumer.Topics {
+			crossposter.Events.SubscribeAsync(topic, newConsumer.Post, true)
+		}
+	}
+
+	for _, producer := range cfg.Producers {
+		newProducer, err := crossposter.Initializers[producer.Type](producer)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		for _, source := range producer.Sources {
+			crossposter.WaitGroup.Add(1)
+			go newProducer.Get(source, lastUpdate)
 		}
 	}
 

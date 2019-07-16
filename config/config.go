@@ -9,8 +9,9 @@ import (
 
 // Config struct
 type Config struct {
-	Entities []crossposter.Entity
-	filename string
+	Consumers []crossposter.Entity
+	Producers []crossposter.Entity
+	filename  string
 }
 
 // New config create
