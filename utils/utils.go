@@ -78,3 +78,13 @@ func TruncateText(text string, limit int) string {
 	}
 	return string(runeText[:limit-1]) + "…"
 }
+
+// StringInSlice check if string exists in the slice
+func StringInSlice(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
+}
