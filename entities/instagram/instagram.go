@@ -56,13 +56,19 @@ func (inst *Instagram) Get(name string, lastUpdate time.Time) {
 				itime := time.Unix(int64(item.TakenAt), 0)
 				if itime.After(lastUpdate) {
 					lastUpdate = itime
-					// TODO: implement CarouselMedia
+					mediaURLs := []string{}
+					if item.Images.GetBest() != "" {
+						mediaURLs = append(mediaURLs, item.Images.GetBest())
+					}
+					for _, slide := range item.CarouselMedia {
+						mediaURLs = append(mediaURLs, slide.Images.GetBest())
+					}
 					post := crossposter.Post{
 						Date:        time.Unix(int64(item.TakenAt), 0),
 						URL:         fmt.Sprintf("https://www.instagram.com/p/%s", item.Code),
 						Author:      user.FullName,
 						Text:        item.Caption.Text,
-						Attachments: []string{item.Images.GetBest()},
+						Attachments: mediaURLs,
 						More:        item.MediaToString() != "photo",
 					}
 					for _, topic := range inst.entity.Topics {
