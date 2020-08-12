@@ -38,9 +38,9 @@ func New(entity crossposter.Entity) (crossposter.EntityInterface, error) {
 		client, err = vkapi.NewVKClientWithToken(token, &vkapi.TokenOptions{
 			ValidateOnStart: true,
 			ServiceToken:    true,
-		})
+		}, false)
 	} else {
-		client, err = vkapi.NewVKClient(vkapi.DeviceAndroid, entity.Options["user"], entity.Options["password"])
+		client, err = vkapi.NewVKClient(vkapi.DeviceAndroid, entity.Options["user"], entity.Options["password"], false)
 	}
 	if err != nil {
 		return nil, err
