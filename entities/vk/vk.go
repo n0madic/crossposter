@@ -176,53 +176,28 @@ func (vk *Vk) Handler(w http.ResponseWriter, r *http.Request) {}
 
 // getMaxSizePhoto from attachment
 func getMaxSizePhoto(p vkapi.PhotoAttachment) string {
-	if p.Photo2560 != "" {
-		return p.Photo2560
+	maxWidth := 0
+	url := ""
+	for _, photo := range p.Sizes {
+		if photo.Width > maxWidth {
+			maxWidth = photo.Width
+			url = photo.Url
+		}
 	}
-	if p.Photo1280 != "" {
-		return p.Photo1280
-	}
-	if p.Photo807 != "" {
-		return p.Photo807
-	}
-	if p.Photo604 != "" {
-		return p.Photo604
-	}
-	if p.Photo130 != "" {
-		return p.Photo130
-	}
-	if p.Photo75 != "" {
-		return p.Photo75
-	}
-
-	return ""
+	return url
 }
 
 // getMaxPreview from video attachment
 func getMaxPreview(v vkapi.VideoAttachment) string {
-	if v.Photo800 != "" {
-		return v.Photo800
+	maxWidth := 0
+	url := ""
+	for _, image := range v.Image {
+		if image.Width > maxWidth {
+			maxWidth = image.Width
+			url = image.Url
+		}
 	}
-	if v.FirstFrame800 != "" {
-		return v.FirstFrame800
-	}
-	if v.Photo320 != "" {
-		return v.Photo320
-	}
-	if v.FirstFrame320 != "" {
-		return v.FirstFrame320
-	}
-	if v.FirstFrame160 != "" {
-		return v.FirstFrame160
-	}
-	if v.Photo130 != "" {
-		return v.Photo130
-	}
-	if v.FirstFrame130 != "" {
-		return v.FirstFrame130
-	}
-
-	return ""
+	return url
 }
 
 func getNameFromID(client *vkapi.VKClient, id int) (string, error) {
