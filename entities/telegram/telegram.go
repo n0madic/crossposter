@@ -3,11 +3,12 @@ package telegram
 import (
 	"fmt"
 	"net/http"
-	"path"
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
+	md "github.com/JohannesKaufmann/html-to-markdown"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/n0madic/crossposter"
 	"github.com/n0madic/crossposter/utils"
@@ -40,7 +41,7 @@ func (tg *Telegram) Get(name string, lastUpdate time.Time) {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
-	tgLogger := log.WithFields(log.Fields{"name": name, "type": tg.entity.Type})
+	tgLogger := log.WithFields(log.Fields{"channel": name, "type": tg.entity.Type})
 
 	updates, err := tg.client.GetUpdatesChan(u)
 	if err != nil {
@@ -105,11 +106,30 @@ func (tg *Telegram) Post(post crossposter.Post) {
 	for _, destination := range tg.entity.Destinations {
 		chatID, errID := strconv.ParseInt(destination, 10, 64)
 
-		tgLogger := log.WithFields(log.Fields{"destination": destination, "type": tg.entity.Type})
+		tgLogger := log.WithFields(log.Fields{"chat": destination, "type": tg.entity.Type})
 
-		if post.Text != "" {
+		converter := md.NewConverter("", true, nil)
+		text, err := converter.ConvertString(post.Text)
+		if err != nil {
+			text = post.Text
+		} else {
+			text = strings.ReplaceAll(text, ` \- `, ` - `)
+		}
+		switch {
+		case post.Title != "" && post.URL != "":
+			text = fmt.Sprintf("[%s](%s)\n%s", post.Title, post.URL, text)
+		case post.Title != "" && post.URL == "":
+			text = fmt.Sprintf("*%s*\n%s", post.Title, text)
+		case post.Title == "" && post.URL != "":
+			text = fmt.Sprintf("%s\n%s", post.URL, text)
+		}
+
+		if (text != "" && len(post.Attachments) == 0) || utf8.RuneCountInString(text) > 1024 {
+			if utf8.RuneCountInString(text) > 4096 {
+				text = utils.TruncateText(text, 4096)
+			}
+
 			var msg tgbotapi.MessageConfig
-			text := post.Text + "\n" + post.URL
 			if errID == nil {
 				msg = tgbotapi.NewMessage(chatID, text)
 			} else {
@@ -118,6 +138,8 @@ func (tg *Telegram) Post(post crossposter.Post) {
 				}
 				msg = tgbotapi.NewMessageToChannel(destination, text)
 			}
+			msg.ParseMode = "Markdown"
+
 			pmsg, err := tg.client.Send(msg)
 			if err != nil {
 				tgLogger.Error(err)
@@ -126,31 +148,33 @@ func (tg *Telegram) Post(post crossposter.Post) {
 			}
 		}
 
-		if errID != nil && len(post.Attachments) > 0 {
-			tgLogger.Error("Need ChatID for attachments")
-		} else {
-			for _, attach := range post.Attachments {
-				res, err := http.Get(attach)
-				if err != nil {
-					tgLogger.Error(err)
-					continue
+		if len(post.Attachments) > 0 {
+			if errID != nil {
+				tgLogger.Error("Need ChatID for post attachments")
+			} else {
+				var files []interface{}
+				for i := 0; i < 10 && i < len(post.Attachments); i++ {
+					files = append(files, tgbotapi.NewInputMediaPhoto(post.Attachments[i]))
 				}
-				defer res.Body.Close()
-
-				if res.StatusCode != http.StatusOK {
-					tgLogger.Errorf("bad status: %s for %s", res.Status, attach)
-					continue
+				if utf8.RuneCountInString(text) <= 1024 {
+					files[0] = tgbotapi.InputMediaPhoto{
+						Type:      "photo",
+						Media:     post.Attachments[0],
+						Caption:   text,
+						ParseMode: "Markdown",
+					}
 				}
-
-				reader := tgbotapi.FileReader{Name: path.Base(attach), Reader: res.Body, Size: -1}
-				msg := tgbotapi.NewPhotoUpload(chatID, reader)
-				msg.Caption = post.Title
+				msg := tgbotapi.NewMediaGroup(chatID, files)
 
 				pmsg, err := tg.client.Send(msg)
 				if err != nil {
 					tgLogger.Error(err)
 				} else {
-					tgLogger.Printf("Posted https://t.me/%s/%v", pmsg.Chat.Title, pmsg.MessageID)
+					if pmsg.Chat != nil {
+						tgLogger.Printf("Posted https://t.me/%s/%v", pmsg.Chat.Title, pmsg.MessageID)
+					} else {
+						tgLogger.Printf("Posted media group")
+					}
 				}
 			}
 		}
