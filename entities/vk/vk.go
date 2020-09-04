@@ -52,11 +52,13 @@ func New(entity crossposter.Entity) (crossposter.EntityInterface, error) {
 func (vk *Vk) Get(domain string, lastUpdate time.Time) {
 	defer crossposter.WaitGroup.Done()
 
+	vkLogger := log.WithFields(log.Fields{"name": domain, "type": vk.entity.Type})
+
 	for {
-		log.Printf("Check updates for [%s] %s", vk.entity.Type, domain)
+		vkLogger.Printf("Check wall updates")
 		Items, err := vk.client.WallGet(domain, 10, nil)
 		if err != nil {
-			log.Error(err)
+			vkLogger.Error(err)
 			return
 		}
 
@@ -99,7 +101,7 @@ func (vk *Vk) Get(domain string, lastUpdate time.Time) {
 					}
 					author, err := getNameFromID(vk.client, item.FromID)
 					if err != nil {
-						log.Error(err)
+						vkLogger.Error(err)
 						return
 					}
 					post := crossposter.Post{
@@ -123,33 +125,34 @@ func (vk *Vk) Get(domain string, lastUpdate time.Time) {
 // Post to Vk
 func (vk *Vk) Post(post crossposter.Post) {
 	var mediaIDs []string
+	vkLogger := log.WithFields(log.Fields{"name": vk.name, "type": vk.entity.Type})
 
 	screenName, err := vk.client.ResolveScreenName(vk.name)
 	if err != nil {
-		log.Error(err)
+		vkLogger.Error(err)
 		return
 	}
 	if screenName.ObjectID == 0 {
-		log.Errorf("public %s not found", vk.name)
+		vkLogger.Errorf("public %s not found", vk.name)
 	}
 
 	for _, attach := range post.Attachments {
 		filePath := path.Join(os.TempDir(), path.Base(attach))
 		err := utils.DownloadFile(attach, filePath)
 		if err != nil {
-			log.Error(err)
+			vkLogger.Error(err)
 			return
 		}
 
 		media, err := vk.client.UploadGroupWallPhotos(screenName.ObjectID, []string{filePath})
 		if err != nil {
-			log.Error(err)
+			vkLogger.Error(err)
 			return
 		}
 
 		err = os.Remove(filePath)
 		if err != nil {
-			log.Error(err)
+			vkLogger.Error(err)
 			return
 		}
 		mediaIDs = append(mediaIDs, vk.client.GetPhotosString(media))
@@ -165,9 +168,9 @@ func (vk *Vk) Post(post crossposter.Post) {
 	}
 	postID, err := vk.client.WallPost(screenName.ObjectID, message, params)
 	if err != nil {
-		log.Error(err)
+		vkLogger.Error(err)
 	} else {
-		log.Printf("Posted in VK https://vk.com/wall-%v_%v", screenName.ObjectID, postID)
+		vkLogger.Printf("Posted in VK https://vk.com/wall-%v_%v", screenName.ObjectID, postID)
 	}
 }
 

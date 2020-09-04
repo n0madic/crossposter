@@ -48,11 +48,13 @@ func (rss *RSS) Get(source string, lastUpdate time.Time) {
 	defer crossposter.WaitGroup.Done()
 	fp := gofeed.NewParser()
 
+	rssLogger := log.WithFields(log.Fields{"source": source, "type": rss.entity.Type})
+
 	for {
-		log.Printf("Check updates for [%s] %s", rss.entity.Type, source)
+		rssLogger.Println("Check updates")
 		sourceFeed, err := fp.ParseURL(source)
 		if err != nil {
-			log.Error(err)
+			rssLogger.Error(err)
 		} else {
 
 			sort.Slice(sourceFeed.Items, func(i, j int) bool {

@@ -37,11 +37,13 @@ func New(entity crossposter.Entity) (crossposter.EntityInterface, error) {
 func (inst *Instagram) Get(name string, lastUpdate time.Time) {
 	defer crossposter.WaitGroup.Done()
 
+	insLogger := log.WithFields(log.Fields{"name": name, "type": inst.entity.Type})
+
 	for {
-		log.Printf("Check updates for [%s] %s", inst.entity.Type, name)
+		insLogger.Println("Check updates")
 		user, err := inst.client.Profiles.ByName(name)
 		if err != nil {
-			log.Error(err)
+			insLogger.Error(err)
 		} else {
 			media := user.Feed()
 			media.Next()
@@ -84,16 +86,18 @@ func (inst *Instagram) Get(name string, lastUpdate time.Time) {
 
 // Post media to Instagram
 func (inst *Instagram) Post(post crossposter.Post) {
+	insLogger := log.WithFields(log.Fields{"type": inst.entity.Type})
+
 	for _, attach := range post.Attachments {
 		res, err := http.Get(attach)
 		if err != nil {
-			log.Error(err)
+			insLogger.Error(err)
 			return
 		}
 		defer res.Body.Close()
 
 		if res.StatusCode != http.StatusOK {
-			log.Errorf("bad status: %s", res.Status)
+			insLogger.Errorf("bad status: %s", res.Status)
 		}
 
 		caption := post.Text
@@ -103,9 +107,9 @@ func (inst *Instagram) Post(post crossposter.Post) {
 
 		item, err := inst.client.UploadPhoto(res.Body, caption, 82, 0)
 		if err != nil {
-			log.Error(err)
+			insLogger.Error(err)
 		} else {
-			log.Printf("Posted https://www.instagram.com/p/%s", item.Code)
+			insLogger.Printf("Posted https://www.instagram.com/p/%s", item.Code)
 		}
 	}
 }

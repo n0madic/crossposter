@@ -48,15 +48,17 @@ func New(entity crossposter.Entity) (crossposter.EntityInterface, error) {
 func (tw *Twitter) Get(screenName string, lastUpdate time.Time) {
 	defer crossposter.WaitGroup.Done()
 
+	twLogger := log.WithFields(log.Fields{"name": screenName, "type": tw.entity.Type})
+
 	for {
-		log.Printf("Check updates for [%s] %s", tw.entity.Type, screenName)
+		twLogger.Println("Check updates")
 		v := url.Values{}
 		v.Set("count", "10")
 		v.Set("screen_name", screenName)
 
 		tweets, err := tw.client.GetUserTimeline(v)
 		if err != nil {
-			log.Error(err)
+			twLogger.Error(err)
 		} else {
 			sort.Slice(tweets, func(i, j int) bool {
 				itime, _ := tweets[i].CreatedAtTime()
@@ -95,6 +97,10 @@ func (tw *Twitter) Get(screenName string, lastUpdate time.Time) {
 // Post status to Twitter
 func (tw *Twitter) Post(post crossposter.Post) {
 	var mediaIDs []string
+	v := url.Values{}
+
+	user, err := tw.client.GetSelf(v)
+	twLogger := log.WithFields(log.Fields{"name": user.ScreenName, "type": tw.entity.Type})
 
 	status := TwitterizeText(post.Text)
 	if strings.HasSuffix(status, "…") || post.More {
@@ -105,12 +111,12 @@ func (tw *Twitter) Post(post crossposter.Post) {
 		if b64, err := utils.GetURLContentInBase64(attach); err == nil {
 			media, err := tw.client.UploadMedia(b64)
 			if err != nil {
-				log.Error(err)
+				twLogger.Error(err)
 				return
 			}
 			mediaIDs = append(mediaIDs, media.MediaIDString)
 		} else {
-			log.Error(err)
+			twLogger.Error(err)
 			return
 		}
 		if index == maxPhotoLimit-1 {
@@ -118,13 +124,12 @@ func (tw *Twitter) Post(post crossposter.Post) {
 		}
 	}
 
-	v := url.Values{}
 	v.Set("media_ids", strings.Join(mediaIDs[:], ","))
 	result, err := tw.client.PostTweet(strings.TrimSpace(status), v)
 	if err != nil {
-		log.Error(err)
+		twLogger.Error(err)
 	} else {
-		log.Printf("Posted tweet https://twitter.com/%s/status/%s", result.User.ScreenName, result.IdStr)
+		twLogger.Printf("Posted tweet https://twitter.com/%s/status/%s", result.User.ScreenName, result.IdStr)
 	}
 }
 

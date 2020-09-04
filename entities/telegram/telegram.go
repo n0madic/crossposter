@@ -40,12 +40,14 @@ func (tg *Telegram) Get(name string, lastUpdate time.Time) {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
+	tgLogger := log.WithFields(log.Fields{"name": name, "type": tg.entity.Type})
+
 	updates, err := tg.client.GetUpdatesChan(u)
 	if err != nil {
-		log.Panicln(err)
+		tgLogger.Panicln(err)
 	}
 
-	log.Printf("Check updates for [%s] %s", tg.entity.Type, name)
+	tgLogger.Println("Check updates")
 	for update := range updates {
 		if update.ChannelPost == nil {
 			continue
@@ -103,6 +105,8 @@ func (tg *Telegram) Post(post crossposter.Post) {
 	for _, destination := range tg.entity.Destinations {
 		chatID, errID := strconv.ParseInt(destination, 10, 64)
 
+		tgLogger := log.WithFields(log.Fields{"destination": destination, "type": tg.entity.Type})
+
 		if post.Text != "" {
 			var msg tgbotapi.MessageConfig
 			text := post.Text + "\n" + post.URL
@@ -116,25 +120,25 @@ func (tg *Telegram) Post(post crossposter.Post) {
 			}
 			pmsg, err := tg.client.Send(msg)
 			if err != nil {
-				log.Error(err)
+				tgLogger.Error(err)
 			} else {
-				log.Printf("Posted https://t.me/%s/%v", pmsg.Chat.Title, pmsg.MessageID)
+				tgLogger.Printf("Posted https://t.me/%s/%v", pmsg.Chat.Title, pmsg.MessageID)
 			}
 		}
 
 		if errID != nil && len(post.Attachments) > 0 {
-			log.Error("Need ChatID for attachments")
+			tgLogger.Error("Need ChatID for attachments")
 		} else {
 			for _, attach := range post.Attachments {
 				res, err := http.Get(attach)
 				if err != nil {
-					log.Error(err)
+					tgLogger.Error(err)
 					continue
 				}
 				defer res.Body.Close()
 
 				if res.StatusCode != http.StatusOK {
-					log.Errorf("bad status: %s for %s", res.Status, attach)
+					tgLogger.Errorf("bad status: %s for %s", res.Status, attach)
 					continue
 				}
 
@@ -144,9 +148,9 @@ func (tg *Telegram) Post(post crossposter.Post) {
 
 				pmsg, err := tg.client.Send(msg)
 				if err != nil {
-					log.Error(err)
+					tgLogger.Error(err)
 				} else {
-					log.Printf("Posted https://t.me/%s/%v", pmsg.Chat.Title, pmsg.MessageID)
+					tgLogger.Printf("Posted https://t.me/%s/%v", pmsg.Chat.Title, pmsg.MessageID)
 				}
 			}
 		}
