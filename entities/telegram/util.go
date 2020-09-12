@@ -12,6 +12,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var (
+	whitespaces = regexp.MustCompile(`(?m)^[ \t]+`)
+	emptylines  = regexp.MustCompile(`(?m)^[ \t]+|^\s*$[\r\n]*|[\r\n]+\s+\z`)
+)
+
 func getText(post *crossposter.Post) string {
 	switch {
 	case post.Title != "" && post.URL != "":
@@ -70,7 +75,7 @@ func sanitize(html string) string {
 	)
 
 	html = p.Sanitize(html)
-	html = regexp.MustCompile(`\t`).ReplaceAllString(html, "")
-	html = regexp.MustCompile(`\n{2,}`).ReplaceAllString(html, "\n")
+	html = whitespaces.ReplaceAllString(html, "")
+	html = emptylines.ReplaceAllString(html, "")
 	return strings.TrimSpace(html)
 }
