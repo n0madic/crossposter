@@ -77,7 +77,7 @@ func (rss *RSS) Get(source string, lastUpdate time.Time) {
 					if item.Author != nil {
 						author = item.Author.Name
 					}
-					post := &crossposter.Post{
+					post := crossposter.Post{
 						Date:        *item.PublishedParsed,
 						URL:         item.Link,
 						Author:      author,
