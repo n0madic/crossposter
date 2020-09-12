@@ -8,6 +8,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+
+	"github.com/PuerkitoBio/goquery"
+	"github.com/djimenez/iconv-go"
 )
 
 // IsRequestURL function
@@ -68,6 +71,22 @@ func GetURLContentInBase64(uri string) (string, error) {
 	}
 
 	return buffer.String(), nil
+}
+
+//NewDocumentToUTF8 return goquery Document in UTF-8 charset
+func NewDocumentToUTF8(url, charset string) (*goquery.Document, error) {
+	res, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	utfBody, err := iconv.NewReader(res.Body, charset, "utf-8")
+	if err != nil {
+		return nil, err
+	}
+
+	return goquery.NewDocumentFromReader(utfBody)
 }
 
 // TruncateText is truncate strings to a fixed size
