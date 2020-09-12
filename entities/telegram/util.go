@@ -3,6 +3,7 @@ package telegram
 import (
 	"fmt"
 	"net/url"
+	"regexp"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
@@ -55,6 +56,7 @@ func sanitize(html string) string {
 		"<br />", "\n",
 	)
 	html = replacer.Replace(html)
+	html = strings.ReplaceAll(html, "</p>", "</p>\n")
 
 	p := bluemonday.NewPolicy()
 	p.AllowStandardURLs()
@@ -66,5 +68,9 @@ func sanitize(html string) string {
 		"s", "strike", "del",
 		"code", "pre",
 	)
-	return p.Sanitize(html)
+
+	html = p.Sanitize(html)
+	html = regexp.MustCompile(`\t`).ReplaceAllString(html, "")
+	html = regexp.MustCompile(`\n{2,}`).ReplaceAllString(html, "\n")
+	return strings.TrimSpace(html)
 }
