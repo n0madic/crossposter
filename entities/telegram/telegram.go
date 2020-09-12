@@ -8,7 +8,6 @@ import (
 	"time"
 	"unicode/utf8"
 
-	md "github.com/JohannesKaufmann/html-to-markdown"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/n0madic/crossposter"
 	"github.com/n0madic/crossposter/utils"
@@ -101,44 +100,35 @@ func (tg *Telegram) Get(name string, lastUpdate time.Time) {
 	}
 }
 
-// Post message to Telegram chat
+// Post message to Telegram channel
 func (tg *Telegram) Post(post crossposter.Post) {
 	for _, destination := range tg.entity.Destinations {
-		chatID, errID := strconv.ParseInt(destination, 10, 64)
+		channelID, errID := strconv.ParseInt(destination, 10, 64)
 
-		tgLogger := log.WithFields(log.Fields{"chat": destination, "type": tg.entity.Type})
+		tgLogger := log.WithFields(log.Fields{"channel": destination, "type": tg.entity.Type})
 
-		converter := md.NewConverter("", true, nil)
-		text, err := converter.ConvertString(post.Text)
-		if err != nil {
-			text = post.Text
-		} else {
-			text = strings.ReplaceAll(text, ` \- `, ` - `)
-		}
-		switch {
-		case post.Title != "" && post.URL != "":
-			text = fmt.Sprintf("[%s](%s)\n%s", post.Title, post.URL, text)
-		case post.Title != "" && post.URL == "":
-			text = fmt.Sprintf("*%s*\n%s", post.Title, text)
-		case post.Title == "" && post.URL != "":
-			text = fmt.Sprintf("%s\n%s", post.URL, text)
-		}
+		extractImages(&post)
+		text := sanitize(getText(&post))
 
 		if (text != "" && len(post.Attachments) == 0) || utf8.RuneCountInString(text) > 1024 {
+			disablePreview := false
 			if utf8.RuneCountInString(text) > 4096 {
-				text = utils.TruncateText(text, 4096)
+				text = utils.TruncateText(text, 4095) + "…"
+			} else {
+				disablePreview = true
 			}
 
 			var msg tgbotapi.MessageConfig
 			if errID == nil {
-				msg = tgbotapi.NewMessage(chatID, text)
+				msg = tgbotapi.NewMessage(channelID, text)
 			} else {
 				if !strings.HasPrefix(destination, "@") {
 					destination = "@" + destination
 				}
 				msg = tgbotapi.NewMessageToChannel(destination, text)
 			}
-			msg.ParseMode = "Markdown"
+			msg.ParseMode = "HTML"
+			msg.DisableWebPagePreview = disablePreview
 
 			pmsg, err := tg.client.Send(msg)
 			if err != nil {
@@ -161,10 +151,10 @@ func (tg *Telegram) Post(post crossposter.Post) {
 						Type:      "photo",
 						Media:     post.Attachments[0],
 						Caption:   text,
-						ParseMode: "Markdown",
+						ParseMode: "HTML",
 					}
 				}
-				msg := tgbotapi.NewMediaGroup(chatID, files)
+				msg := tgbotapi.NewMediaGroup(channelID, files)
 
 				pmsg, err := tg.client.Send(msg)
 				if err != nil {
