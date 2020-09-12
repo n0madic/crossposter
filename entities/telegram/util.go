@@ -61,7 +61,10 @@ func sanitize(html string) string {
 		"<br />", "\n",
 	)
 	html = replacer.Replace(html)
-	html = strings.ReplaceAll(html, "</p>", "</p>\n")
+
+	for _, tag := range []string{"</p>", "</blockquote>"} {
+		html = strings.ReplaceAll(html, tag, tag+"\n")
+	}
 
 	p := bluemonday.NewPolicy()
 	p.AllowStandardURLs()
