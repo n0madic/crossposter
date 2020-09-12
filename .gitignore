@@ -1,4 +1,3 @@
 *.bak
 *.json
 *.yaml
-test*.go
