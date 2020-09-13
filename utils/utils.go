@@ -76,8 +76,10 @@ func ExtractImages(post *crossposter.Post) error {
 				}
 			}
 		}
-	})
-	return nil
+	}).Remove()
+	doc.Find("a:empty").Remove()
+	post.Text, err = doc.Html()
+	return err
 }
 
 // GetURLContentInBase64 get content from URL and return it in base64
