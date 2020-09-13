@@ -1,7 +1,6 @@
 package twitter
 
 import (
-	"regexp"
 	"strings"
 	"unicode/utf8"
 
@@ -16,8 +15,7 @@ func TwitterizeText(input string) string {
 	truncatedText := ""
 	currentTweetLength := 0
 	maxAvailableLength := maxTweetLength - shortURLLength - 2
-	reTags := regexp.MustCompile(`\[(club|id)\d+\|(.+)\]`)
-	words := strings.Fields(reTags.ReplaceAllString(input, ""))
+	words := strings.Fields(input)
 	for _, word := range words {
 		if utils.IsRequestURL(word) {
 			currentTweetLength += shortURLLength
