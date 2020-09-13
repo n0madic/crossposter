@@ -1,6 +1,6 @@
 FROM golang:alpine
 
-RUN apk add --quiet --no-cache git
+RUN apk add --quiet --no-cache build-base git
 
 ADD . /go/src/github.com/n0madic/crossposter
 
