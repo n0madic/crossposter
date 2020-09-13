@@ -8,11 +8,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/djimenez/iconv-go"
-	"github.com/n0madic/crossposter"
 )
 
 // IsRequestURL function
@@ -51,35 +49,6 @@ func DownloadFile(uri string, filePath string) error {
 	}
 
 	return nil
-}
-
-// ExtractImages from HTML to attachments
-func ExtractImages(post *crossposter.Post) error {
-	base, err := url.Parse(post.URL)
-	if err != nil {
-		return err
-	}
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(post.Text))
-	if err != nil {
-		return err
-	}
-	doc.Find("img").Each(func(i int, sel *goquery.Selection) {
-		for _, attr := range []string{"src", "data-src"} {
-			src, exist := sel.Attr(attr)
-			if exist && src != "" {
-				u, err := url.Parse(src)
-				if err == nil {
-					if !u.IsAbs() {
-						src = base.ResolveReference(u).String()
-					}
-					post.Attachments = append(post.Attachments, src)
-				}
-			}
-		}
-	}).Remove()
-	doc.Find("a:empty").Remove()
-	post.Text, err = doc.Html()
-	return err
 }
 
 // GetURLContentInBase64 get content from URL and return it in base64
