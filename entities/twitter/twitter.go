@@ -88,7 +88,7 @@ func (tw *Twitter) Get(screenName string, lastUpdate time.Time) {
 				}
 			}
 		}
-		time.Sleep(time.Duration(crossposter.WaitTime) * time.Minute)
+		time.Sleep(time.Duration(tw.entity.Wait) * time.Minute)
 	}
 }
 

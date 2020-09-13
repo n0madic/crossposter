@@ -84,7 +84,7 @@ func (pikabu *Pikabu) Get(location string, lastUpdate time.Time) {
 				}
 			}
 		}
-		time.Sleep(time.Duration(crossposter.WaitTime) * time.Minute)
+		time.Sleep(time.Duration(pikabu.entity.Wait) * time.Minute)
 	}
 }
 

@@ -17,9 +17,9 @@ const timeLayout = "2006-01-02T15:04:05"
 
 var (
 	args struct {
-		Bind     string `arg:"-b,env" help:"Bind address"`
-		Config   string `arg:"env" help:"Config file"`
-		DontPost bool   `arg:"-d,env" help:"Do not produce posts"`
+		Bind     string `arg:"-b,env" help:"Bind address" default:":8000"`
+		Config   string `arg:"env" help:"Config file" default:"config.yaml"`
+		DontPost bool   `arg:"-d,env" help:"Do not post"`
 		Last     string `arg:"-l,env" help:"Initial date for update"`
 	}
 	lastUpdate time.Time
@@ -30,12 +30,10 @@ func init() {
 		FullTimestamp:          true,
 		DisableLevelTruncation: true,
 	})
+	args.Last = time.Now().Format(timeLayout)
 }
 
 func main() {
-	args.Bind = ":8000"
-	args.Config = "config.yaml"
-	args.Last = time.Now().Format(timeLayout)
 	arg.MustParse(&args)
 
 	cfg, err := config.New(args.Config)
@@ -62,6 +60,9 @@ func main() {
 	}
 
 	for _, producer := range cfg.Producers {
+		if producer.Wait == 0 {
+			producer.Wait = 5
+		}
 		newProducer, err := crossposter.Initializers[producer.Type](producer)
 		if err != nil {
 			log.Fatalln(err)

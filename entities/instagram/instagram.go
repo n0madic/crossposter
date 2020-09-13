@@ -80,7 +80,7 @@ func (inst *Instagram) Get(name string, lastUpdate time.Time) {
 				}
 			}
 		}
-		time.Sleep(time.Duration(crossposter.WaitTime) * time.Minute)
+		time.Sleep(time.Duration(inst.entity.Wait) * time.Minute)
 	}
 }
 

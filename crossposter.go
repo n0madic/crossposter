@@ -8,9 +8,6 @@ import (
 	"github.com/asaskevich/EventBus"
 )
 
-// WaitTime default wait time
-const WaitTime = 5
-
 type (
 
 	// Post data struct
@@ -32,6 +29,7 @@ type (
 		Sources      []string          `json:"sources" yaml:"sources"`
 		Destinations []string          `json:"destinations" yaml:"destinations"`
 		Topics       []string          `json:"topics" yaml:"topics"`
+		Wait         int               `json:"wait" yaml:"wait"`
 	}
 
 	// EntityInterface is interface

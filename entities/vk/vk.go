@@ -127,7 +127,7 @@ func (vk *Vk) Get(domain string, lastUpdate time.Time) {
 				}
 			}
 		}
-		time.Sleep(time.Duration(crossposter.WaitTime) * time.Minute)
+		time.Sleep(time.Duration(vk.entity.Wait) * time.Minute)
 	}
 }
 

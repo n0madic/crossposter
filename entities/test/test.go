@@ -47,7 +47,7 @@ func (test *Test) Get(name string, lastUpdate time.Time) {
 		for _, topic := range test.entity.Topics {
 			crossposter.Events.Publish(topic, test.post)
 		}
-		time.Sleep(time.Duration(crossposter.WaitTime) * time.Minute)
+		time.Sleep(time.Duration(test.entity.Wait) * time.Minute)
 	}
 }
 
