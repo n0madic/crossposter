@@ -21,7 +21,6 @@ import (
 type Vk struct {
 	entity *crossposter.Entity
 	client *vkapi.VKClient
-	name   string
 }
 
 var userMap sync.Map
@@ -45,7 +44,7 @@ func New(entity crossposter.Entity) (crossposter.EntityInterface, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Vk{&entity, client, entity.Options["name"]}, nil
+	return &Vk{&entity, client}, nil
 }
 
 // Get posts from Vk wall
@@ -99,11 +98,21 @@ func (vk *Vk) Get(domain string, lastUpdate time.Time) {
 							}
 						}
 					}
-					author, err := getNameFromID(vk.client, item.FromID)
+
+					author, err := vk.getNameFromID(item.FromID)
 					if err != nil {
 						vkLogger.Error(err)
 						return
 					}
+
+					matches := reInternalURLs.FindAllStringSubmatch(item.Text, -1)
+					for _, match := range matches {
+						if strings.HasPrefix(match[1], "club") || strings.HasPrefix(match[1], "id") {
+							match[1] = "https://vk.com/" + match[1]
+						}
+						item.Text = strings.ReplaceAll(item.Text, match[0], fmt.Sprintf("[%s](%s)", match[2], match[1]))
+					}
+
 					post := crossposter.Post{
 						Date:        timestamp,
 						URL:         fmt.Sprintf("https://vk.com/wall%v_%v", item.FromID, item.ID),
@@ -124,89 +133,65 @@ func (vk *Vk) Get(domain string, lastUpdate time.Time) {
 
 // Post to Vk
 func (vk *Vk) Post(post crossposter.Post) {
-	var mediaIDs []string
-	vkLogger := log.WithFields(log.Fields{"name": vk.name, "type": vk.entity.Type})
+	for _, destination := range vk.entity.Destinations {
+		var mediaIDs []string
+		vkLogger := log.WithFields(log.Fields{"name": destination, "type": vk.entity.Type})
 
-	screenName, err := vk.client.ResolveScreenName(vk.name)
-	if err != nil {
-		vkLogger.Error(err)
-		return
-	}
-	if screenName.ObjectID == 0 {
-		vkLogger.Errorf("public %s not found", vk.name)
-	}
-
-	for _, attach := range post.Attachments {
-		filePath := path.Join(os.TempDir(), path.Base(attach))
-		err := utils.DownloadFile(attach, filePath)
+		screenName, err := vk.client.ResolveScreenName(destination)
 		if err != nil {
 			vkLogger.Error(err)
 			return
 		}
-
-		media, err := vk.client.UploadGroupWallPhotos(screenName.ObjectID, []string{filePath})
-		if err != nil {
-			vkLogger.Error(err)
-			return
+		if screenName.ObjectID == 0 {
+			vkLogger.Errorf("public %s not found", destination)
 		}
 
-		err = os.Remove(filePath)
+		for _, attach := range post.Attachments {
+			filePath := path.Join(os.TempDir(), path.Base(attach))
+			err := utils.DownloadFile(attach, filePath)
+			if err != nil {
+				vkLogger.Error(err)
+				return
+			}
+
+			media, err := vk.client.UploadGroupWallPhotos(screenName.ObjectID, []string{filePath})
+			if err != nil {
+				vkLogger.Error(err)
+				return
+			}
+
+			err = os.Remove(filePath)
+			if err != nil {
+				vkLogger.Error(err)
+				return
+			}
+			mediaIDs = append(mediaIDs, vk.client.GetPhotosString(media))
+		}
+
+		message := post.Text
+		if post.More {
+			message += "\n" + post.URL
+		}
+		params := url.Values{}
+		if len(mediaIDs) > 0 {
+			params.Set("attachments", strings.Join(mediaIDs, ","))
+		}
+		postID, err := vk.client.WallPost(screenName.ObjectID, message, params)
 		if err != nil {
 			vkLogger.Error(err)
-			return
+		} else {
+			vkLogger.Printf("Posted in VK https://vk.com/wall-%v_%v", screenName.ObjectID, postID)
 		}
-		mediaIDs = append(mediaIDs, vk.client.GetPhotosString(media))
-	}
-
-	message := post.Text
-	if post.More {
-		message += "\n" + post.URL
-	}
-	params := url.Values{}
-	if len(mediaIDs) > 0 {
-		params.Set("attachments", strings.Join(mediaIDs, ","))
-	}
-	postID, err := vk.client.WallPost(screenName.ObjectID, message, params)
-	if err != nil {
-		vkLogger.Error(err)
-	} else {
-		vkLogger.Printf("Posted in VK https://vk.com/wall-%v_%v", screenName.ObjectID, postID)
 	}
 }
 
 // Handler not implemented
 func (vk *Vk) Handler(w http.ResponseWriter, r *http.Request) {}
 
-// getMaxSizePhoto from attachment
-func getMaxSizePhoto(p vkapi.PhotoAttachment) string {
-	maxWidth := 0
-	url := ""
-	for _, photo := range p.Sizes {
-		if photo.Width > maxWidth {
-			maxWidth = photo.Width
-			url = photo.Url
-		}
-	}
-	return url
-}
-
-// getMaxPreview from video attachment
-func getMaxPreview(v vkapi.VideoAttachment) string {
-	maxWidth := 0
-	url := ""
-	for _, image := range v.Image {
-		if image.Width > maxWidth {
-			maxWidth = image.Width
-			url = image.Url
-		}
-	}
-	return url
-}
-
-func getNameFromID(client *vkapi.VKClient, id int) (string, error) {
+func (vk *Vk) getNameFromID(id int) (string, error) {
 	name, ok := userMap.Load(id)
 	if !ok {
-		user, err := client.UsersGet([]int{int(^uint32(id))})
+		user, err := vk.client.UsersGet([]int{int(^uint32(id))})
 		if err != nil {
 			return "", err
 		}
