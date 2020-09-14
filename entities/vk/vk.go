@@ -110,7 +110,7 @@ func (vk *Vk) Get(domain string, lastUpdate time.Time) {
 						if strings.HasPrefix(match[1], "club") || strings.HasPrefix(match[1], "id") {
 							match[1] = "https://vk.com/" + match[1]
 						}
-						item.Text = strings.ReplaceAll(item.Text, match[0], fmt.Sprintf("[%s](%s)", match[2], match[1]))
+						item.Text = strings.ReplaceAll(item.Text, match[0], fmt.Sprintf("<a href=\"%s\">%s</a>", match[1], match[2]))
 					}
 
 					post := crossposter.Post{
