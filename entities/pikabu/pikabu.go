@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/n0madic/crossposter"
 	"github.com/n0madic/crossposter/utils"
 	log "github.com/sirupsen/logrus"
@@ -15,7 +16,8 @@ import (
 
 // Pikabu entity
 type Pikabu struct {
-	entity *crossposter.Entity
+	entity    *crossposter.Entity
+	published *lru.Cache
 }
 
 var mutex sync.Mutex
@@ -26,7 +28,8 @@ func init() {
 
 // New run Pikabu entity
 func New(entity crossposter.Entity) (crossposter.EntityInterface, error) {
-	return &Pikabu{entity: &entity}, nil
+	cache, _ := lru.New(10000)
+	return &Pikabu{entity: &entity, published: cache}, nil
 }
 
 // Get items from Pikabu
@@ -80,8 +83,9 @@ func (pikabu *Pikabu) Get(location string, lastUpdate time.Time) {
 			})
 
 			for _, post := range posts {
-				if post.Date.After(lastUpdate) {
+				if post.Date.After(lastUpdate) && !pikabu.published.Contains(post.URL) {
 					lastUpdate = post.Date
+					pikabu.published.Add(post.URL, nil)
 					for _, topic := range pikabu.entity.Topics {
 						crossposter.Events.Publish(topic, post)
 						time.Sleep(time.Second * 5)
