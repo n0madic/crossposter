@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -16,6 +17,8 @@ import (
 type Pikabu struct {
 	entity *crossposter.Entity
 }
+
+var mutex sync.Mutex
 
 func init() {
 	crossposter.AddEntity("pikabu", New)
@@ -33,7 +36,9 @@ func (pikabu *Pikabu) Get(location string, lastUpdate time.Time) {
 	pikabuLogger := log.WithFields(log.Fields{"location": location, "type": pikabu.entity.Type})
 
 	for {
+		mutex.Lock()
 		pikabuLogger.Println("Check updates")
+
 		doc, err := utils.NewDocumentToUTF8("https://pikabu.ru/"+location, "windows-1251")
 		if err != nil {
 			pikabuLogger.Error(err)
@@ -84,6 +89,8 @@ func (pikabu *Pikabu) Get(location string, lastUpdate time.Time) {
 				}
 			}
 		}
+
+		mutex.Unlock()
 		time.Sleep(time.Duration(pikabu.entity.Wait) * time.Minute)
 	}
 }
