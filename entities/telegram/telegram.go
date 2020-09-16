@@ -118,7 +118,7 @@ func (tg *Telegram) Post(post crossposter.Post) {
 			disablePreview := false
 			if utf8.RuneCountInString(text) > 4096 {
 				text = utils.TruncateText(text, 4095) + "…"
-			} else {
+			} else if len(post.Attachments) > 0 {
 				disablePreview = true
 			}
 
@@ -146,20 +146,29 @@ func (tg *Telegram) Post(post crossposter.Post) {
 			if errID != nil {
 				tgLogger.Error("Need ChatID for post attachments")
 			} else {
-				var files []interface{}
-				for i := 0; i < 10 && i < len(post.Attachments); i++ {
-					files = append(files, tgbotapi.NewInputMediaPhoto(post.Attachments[i]))
-				}
-				if utf8.RuneCountInString(text) <= 1024 {
-					files[0] = tgbotapi.InputMediaPhoto{
-						Type:      "photo",
-						Media:     post.Attachments[0],
-						Caption:   text,
-						ParseMode: "HTML",
+				var msg tgbotapi.Chattable
+				if len(post.Attachments) == 1 {
+					photo := tgbotapi.NewPhotoUpload(channelID, nil)
+					photo.FileID = post.Attachments[0]
+					photo.UseExisting = true
+					photo.Caption = text
+					photo.ParseMode = "HTML"
+					msg = photo
+				} else {
+					var files []interface{}
+					for i := 0; i < 10 && i < len(post.Attachments); i++ {
+						files = append(files, tgbotapi.NewInputMediaPhoto(post.Attachments[i]))
 					}
+					if utf8.RuneCountInString(text) <= 1024 {
+						files[0] = tgbotapi.InputMediaPhoto{
+							Type:      "photo",
+							Media:     post.Attachments[0],
+							Caption:   text,
+							ParseMode: "HTML",
+						}
+					}
+					msg = tgbotapi.NewMediaGroup(channelID, files)
 				}
-				msg := tgbotapi.NewMediaGroup(channelID, files)
-
 				pmsg, err := tg.client.Send(msg)
 				if err != nil {
 					tgLogger.Error(err)
