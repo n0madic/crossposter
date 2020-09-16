@@ -70,15 +70,24 @@ func (tw *Twitter) Get(screenName string, lastUpdate time.Time) {
 					lastUpdate = timestamp
 					mediaURLs := []string{}
 					for _, media := range tweet.Entities.Media {
-						if media.Type == "photo" || media.Type == "animated_gif" {
-							mediaURLs = append(mediaURLs, media.Media_url_https)
+						// if media.Type == "photo" || media.Type == "animated_gif" {
+						mediaURLs = append(mediaURLs, media.Media_url_https)
+						// }
+					}
+					text := tweet.FullText
+					if tweet.RetweetedStatus != nil {
+						text = tweet.RetweetedStatus.FullText
+						for _, media := range tweet.RetweetedStatus.Entities.Media {
+							if !utils.StringInSlice(media.Media_url_https, mediaURLs) {
+								mediaURLs = append(mediaURLs, media.Media_url_https)
+							}
 						}
 					}
 					post := crossposter.Post{
 						Date:        timestamp,
 						URL:         fmt.Sprintf("https://twitter.com/%s/status/%s", screenName, tweet.IdStr),
 						Author:      tweet.User.ScreenName,
-						Text:        tweet.FullText,
+						Text:        text,
 						Attachments: mediaURLs,
 						More:        false,
 					}
