@@ -67,10 +67,8 @@ func main() {
 		if err != nil {
 			log.Fatalln(err)
 		}
-		for _, source := range producer.Sources {
-			crossposter.WaitGroup.Add(1)
-			go newProducer.Get(source, lastUpdate)
-		}
+		crossposter.WaitGroup.Add(1)
+		go newProducer.Get(lastUpdate)
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

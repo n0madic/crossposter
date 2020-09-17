@@ -34,13 +34,13 @@ func New(entity crossposter.Entity) (crossposter.EntityInterface, error) {
 }
 
 // Get message from Telegram channel
-func (tg *Telegram) Get(name string, lastUpdate time.Time) {
+func (tg *Telegram) Get(lastUpdate time.Time) {
 	defer crossposter.WaitGroup.Done()
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
-	tgLogger := log.WithFields(log.Fields{"channel": name, "type": tg.entity.Type})
+	tgLogger := log.WithFields(log.Fields{"sources": tg.entity.Sources, "type": tg.entity.Type})
 
 	updates, err := tg.client.GetUpdatesChan(u)
 	if err != nil {

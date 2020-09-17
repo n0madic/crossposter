@@ -37,17 +37,19 @@ func New(entity crossposter.Entity) (crossposter.EntityInterface, error) {
 }
 
 // Get test message
-func (test *Test) Get(name string, lastUpdate time.Time) {
+func (test *Test) Get(lastUpdate time.Time) {
 	defer crossposter.WaitGroup.Done()
 
-	testLogger := log.WithFields(log.Fields{"name": name, "type": test.entity.Type})
+	for _, name := range test.entity.Sources {
+		testLogger := log.WithFields(log.Fields{"name": name, "type": test.entity.Type})
 
-	for {
-		testLogger.Info("Check test message")
-		for _, topic := range test.entity.Topics {
-			crossposter.Events.Publish(topic, test.post)
+		for {
+			testLogger.Info("Check test message")
+			for _, topic := range test.entity.Topics {
+				crossposter.Events.Publish(topic, test.post)
+			}
+			time.Sleep(time.Duration(test.entity.Wait) * time.Minute)
 		}
-		time.Sleep(time.Duration(test.entity.Wait) * time.Minute)
 	}
 }
 

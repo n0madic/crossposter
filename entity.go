@@ -20,7 +20,7 @@ type (
 
 	// EntityInterface is interface
 	EntityInterface interface {
-		Get(name string, lastUpdate time.Time)
+		Get(lastUpdate time.Time)
 		Post(post Post)
 		Handler(w http.ResponseWriter, r *http.Request)
 	}

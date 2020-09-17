@@ -36,63 +36,65 @@ func New(entity crossposter.Entity) (crossposter.EntityInterface, error) {
 		entity.Options["key"],
 		entity.Options["key_secret"],
 	)
-	if client == nil {
-		return nil, fmt.Errorf("can't create new TwitterAPI")
+	ok, err := client.VerifyCredentials()
+	if !ok {
+		return nil, fmt.Errorf("can't create new TwitterAPI: %v", err)
 	}
 	return &Twitter{&entity, client}, nil
 }
 
 // Get user's timeline from Twitter
-func (tw *Twitter) Get(screenName string, lastUpdate time.Time) {
+func (tw *Twitter) Get(lastUpdate time.Time) {
 	defer crossposter.WaitGroup.Done()
 
-	twLogger := log.WithFields(log.Fields{"name": screenName, "type": tw.entity.Type})
-
 	for {
-		twLogger.Println("Check updates")
-		v := url.Values{}
-		v.Set("count", "10")
-		v.Set("screen_name", screenName)
+		for _, screenName := range tw.entity.Sources {
+			twLogger := log.WithFields(log.Fields{"name": screenName, "type": tw.entity.Type})
+			twLogger.Println("Check updates")
+			v := url.Values{}
+			v.Set("count", "10")
+			v.Set("screen_name", screenName)
 
-		tweets, err := tw.client.GetUserTimeline(v)
-		if err != nil {
-			twLogger.Error(err)
-		} else {
-			sort.Slice(tweets, func(i, j int) bool {
-				itime, _ := tweets[i].CreatedAtTime()
-				jtime, _ := tweets[j].CreatedAtTime()
-				return itime.Before(jtime)
-			})
+			tweets, err := tw.client.GetUserTimeline(v)
+			if err != nil {
+				twLogger.Error(err)
+			} else {
+				sort.Slice(tweets, func(i, j int) bool {
+					itime, _ := tweets[i].CreatedAtTime()
+					jtime, _ := tweets[j].CreatedAtTime()
+					return itime.Before(jtime)
+				})
 
-			for _, tweet := range tweets {
-				timestamp, _ := tweet.CreatedAtTime()
-				if timestamp.After(lastUpdate) {
-					lastUpdate = timestamp
-					mediaURLs := []string{}
-					for _, media := range tweet.Entities.Media {
-						// if media.Type == "photo" || media.Type == "animated_gif" {
-						mediaURLs = append(mediaURLs, media.Media_url_https)
-						// }
-					}
-					text := tweet.FullText
-					if tweet.RetweetedStatus != nil {
-						text = tweet.RetweetedStatus.FullText
-						for _, media := range tweet.RetweetedStatus.Entities.Media {
-							if !utils.StringInSlice(media.Media_url_https, mediaURLs) {
-								mediaURLs = append(mediaURLs, media.Media_url_https)
+				for _, tweet := range tweets {
+					timestamp, _ := tweet.CreatedAtTime()
+					if timestamp.After(lastUpdate) {
+						lastUpdate = timestamp
+						mediaURLs := []string{}
+						for _, media := range tweet.Entities.Media {
+							// if media.Type == "photo" || media.Type == "animated_gif" {
+							mediaURLs = append(mediaURLs, media.Media_url_https)
+							// }
+						}
+						text := tweet.FullText
+						if tweet.RetweetedStatus != nil {
+							text = tweet.RetweetedStatus.FullText
+							for _, media := range tweet.RetweetedStatus.Entities.Media {
+								if !utils.StringInSlice(media.Media_url_https, mediaURLs) {
+									mediaURLs = append(mediaURLs, media.Media_url_https)
+								}
 							}
 						}
-					}
-					post := crossposter.Post{
-						Date:        timestamp,
-						URL:         fmt.Sprintf("https://twitter.com/%s/status/%s", screenName, tweet.IdStr),
-						Author:      tweet.User.ScreenName,
-						Text:        text,
-						Attachments: mediaURLs,
-						More:        false,
-					}
-					for _, topic := range tw.entity.Topics {
-						crossposter.Events.Publish(topic, post)
+						post := crossposter.Post{
+							Date:        timestamp,
+							URL:         fmt.Sprintf("https://twitter.com/%s/status/%s", screenName, tweet.IdStr),
+							Author:      tweet.User.ScreenName,
+							Text:        text,
+							Attachments: mediaURLs,
+							More:        false,
+						}
+						for _, topic := range tw.entity.Topics {
+							crossposter.Events.Publish(topic, post)
+						}
 					}
 				}
 			}

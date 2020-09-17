@@ -48,81 +48,82 @@ func New(entity crossposter.Entity) (crossposter.EntityInterface, error) {
 }
 
 // Get posts from Vk wall
-func (vk *Vk) Get(domain string, lastUpdate time.Time) {
+func (vk *Vk) Get(lastUpdate time.Time) {
 	defer crossposter.WaitGroup.Done()
 
-	vkLogger := log.WithFields(log.Fields{"name": domain, "type": vk.entity.Type})
-
 	for {
-		vkLogger.Printf("Check wall updates")
-		Items, err := vk.client.WallGet(domain, 10, nil)
-		if err != nil {
-			vkLogger.Error(err)
-			return
-		}
+		for _, domain := range vk.entity.Sources {
+			vkLogger := log.WithFields(log.Fields{"name": domain, "type": vk.entity.Type})
+			vkLogger.Printf("Check wall updates")
+			Items, err := vk.client.WallGet(domain, 10, nil)
+			if err != nil {
+				vkLogger.Error(err)
+				return
+			}
 
-		sort.Slice(Items.Posts, func(i, j int) bool {
-			itime := time.Unix(Items.Posts[i].Date, 0)
-			jtime := time.Unix(Items.Posts[j].Date, 0)
-			return itime.Before(jtime)
-		})
+			sort.Slice(Items.Posts, func(i, j int) bool {
+				itime := time.Unix(Items.Posts[i].Date, 0)
+				jtime := time.Unix(Items.Posts[j].Date, 0)
+				return itime.Before(jtime)
+			})
 
-		for _, item := range Items.Posts {
-			if item.MarkedAsAd == 0 {
-				timestamp := time.Unix(item.Date, 0)
-				if timestamp.After(lastUpdate) {
-					lastUpdate = timestamp
-					if item.CopyHistory != nil {
-						item = item.CopyHistory[0]
-					}
-					var photos []string
-					var needMore bool
-					if item.Attachments != nil {
-						if len(item.Attachments) > 1 {
-							needMore = true
+			for _, item := range Items.Posts {
+				if item.MarkedAsAd == 0 {
+					timestamp := time.Unix(item.Date, 0)
+					if timestamp.After(lastUpdate) {
+						lastUpdate = timestamp
+						if item.CopyHistory != nil {
+							item = item.CopyHistory[0]
 						}
-						for _, attach := range item.Attachments {
-							switch attach.Type {
-							case "photo":
-								photos = append(photos, getMaxSizePhoto(*attach.Photo))
-							case "video":
-								photos = append(photos, getMaxPreview(*attach.Video))
-								needMore = true
-							case "doc":
-								if attach.Document.Type == 3 { // GIF
-									photos = append(photos, attach.Document.URL)
-									break
-								}
-							default:
+						var photos []string
+						var needMore bool
+						if item.Attachments != nil {
+							if len(item.Attachments) > 1 {
 								needMore = true
 							}
+							for _, attach := range item.Attachments {
+								switch attach.Type {
+								case "photo":
+									photos = append(photos, getMaxSizePhoto(*attach.Photo))
+								case "video":
+									photos = append(photos, getMaxPreview(*attach.Video))
+									needMore = true
+								case "doc":
+									if attach.Document.Type == 3 { // GIF
+										photos = append(photos, attach.Document.URL)
+										break
+									}
+								default:
+									needMore = true
+								}
+							}
 						}
-					}
 
-					author, err := vk.getNameFromID(item.FromID)
-					if err != nil {
-						vkLogger.Error(err)
-						return
-					}
-
-					matches := reInternalURLs.FindAllStringSubmatch(item.Text, -1)
-					for _, match := range matches {
-						if strings.HasPrefix(match[1], "club") || strings.HasPrefix(match[1], "id") {
-							match[1] = "https://vk.com/" + match[1]
+						author, err := vk.getNameFromID(item.FromID)
+						if err != nil {
+							vkLogger.Error(err)
+							return
 						}
-						item.Text = strings.ReplaceAll(item.Text, match[0], fmt.Sprintf("<a href=\"%s\">%s</a>", match[1], match[2]))
-					}
 
-					post := crossposter.Post{
-						Date:        timestamp,
-						URL:         fmt.Sprintf("https://vk.com/wall%v_%v", item.FromID, item.ID),
-						Author:      author,
-						Text:        item.Text,
-						Attachments: photos,
-						More:        needMore,
-					}
-					for _, topic := range vk.entity.Topics {
-						crossposter.Events.Publish(topic, post)
+						matches := reInternalURLs.FindAllStringSubmatch(item.Text, -1)
+						for _, match := range matches {
+							if strings.HasPrefix(match[1], "club") || strings.HasPrefix(match[1], "id") {
+								match[1] = "https://vk.com/" + match[1]
+							}
+							item.Text = strings.ReplaceAll(item.Text, match[0], fmt.Sprintf("<a href=\"%s\">%s</a>", match[1], match[2]))
+						}
+
+						post := crossposter.Post{
+							Date:        timestamp,
+							URL:         fmt.Sprintf("https://vk.com/wall%v_%v", item.FromID, item.ID),
+							Author:      author,
+							Text:        item.Text,
+							Attachments: photos,
+							More:        needMore,
+						}
+						for _, topic := range vk.entity.Topics {
+							crossposter.Events.Publish(topic, post)
+						}
 					}
 				}
 			}
