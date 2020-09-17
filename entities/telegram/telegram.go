@@ -112,7 +112,7 @@ func (tg *Telegram) Post(post crossposter.Post) {
 			tgLogger.Warnf("Can't extract image: %s", err)
 		}
 
-		text := sanitize(post.String())
+		text := sanitize(post.FullText())
 
 		if (text != "" && len(post.Attachments) == 0) || utf8.RuneCountInString(text) > 1024 {
 			disablePreview := false

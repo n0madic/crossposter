@@ -52,7 +52,7 @@ func (post *Post) ExtractImages() error {
 	return err
 }
 
-func (post *Post) String() string {
+func (post *Post) FullText() string {
 	switch {
 	case post.Title != "" && post.URL != "":
 		return fmt.Sprintf("<b><a href=\"%s\">%s</a></b>\n%s", post.URL, post.Title, post.Text)
