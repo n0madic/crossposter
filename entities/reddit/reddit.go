@@ -22,12 +22,16 @@ type Reddit struct {
 
 type (
 	Submission struct {
-		SelftextHTML string        `json:"selftext_html"`
-		Title        string        `json:"title"`
-		Pinned       bool          `json:"pinned"`
-		Author       string        `json:"author"`
-		URL          string        `json:"url"`
-		CreatedUTC   jsonTimestamp `json:"created_utc"`
+		Author        string        `json:"author"`
+		CreatedUTC    jsonTimestamp `json:"created_utc"`
+		LinkFlairText string        `json:"link_flair_text"`
+		Permalink     string        `json:"permalink"`
+		Pinned        bool          `json:"pinned"`
+		PostHint      string        `json:"post_hint"`
+		SelftextHTML  string        `json:"selftext_html"`
+		Stickied      bool          `json:"stickied"`
+		Title         string        `json:"title"`
+		URL           string        `json:"url"`
 	}
 
 	Subreddit struct {
@@ -66,17 +70,25 @@ func (reddit *Reddit) Get(lastUpdate time.Time) {
 				redLogger.Error(err)
 			} else {
 				for _, sub := range data.Data.Children {
-					if !sub.Data.Pinned {
+					if !sub.Data.Pinned && !sub.Data.Stickied && sub.Data.LinkFlairText != "MOD POST" {
+						var mediaURLs []string
+						url := sub.Data.URL
+						switch sub.Data.PostHint {
+						case "image":
+							mediaURLs = append(mediaURLs, sub.Data.URL)
+							url = "https://www.reddit.com" + sub.Data.Permalink
+						}
 						text := html.UnescapeString(sub.Data.SelftextHTML)
 						text = strings.TrimPrefix(text, "<!-- SC_OFF -->")
 						text = strings.TrimSuffix(text, "<!-- SC_ON -->")
 						post := crossposter.Post{
-							Date:   time.Time(sub.Data.CreatedUTC),
-							URL:    sub.Data.URL,
-							Author: sub.Data.Author,
-							Title:  strings.TrimSpace(sub.Data.Title),
-							Text:   strings.TrimSpace(text),
-							More:   true,
+							Date:        time.Time(sub.Data.CreatedUTC),
+							URL:         url,
+							Author:      sub.Data.Author,
+							Title:       sub.Data.Title,
+							Text:        strings.TrimSpace(text),
+							Attachments: mediaURLs,
+							More:        true,
 						}
 						posts = append(posts, post)
 					}
@@ -96,10 +108,9 @@ func (reddit *Reddit) Get(lastUpdate time.Time) {
 						}
 					}
 				}
-
 			}
-			time.Sleep(time.Duration(reddit.entity.Wait) * time.Minute)
 		}
+		time.Sleep(time.Duration(reddit.entity.Wait) * time.Minute)
 	}
 }
 
