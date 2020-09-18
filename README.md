@@ -8,6 +8,7 @@ Application for forwarding posts between different services. The producer-consum
 |:--|:-:|:-:|:-:|
 | Instagram | x | x | |
 | Pikabu | x | | |
+| Reddit | x | | |
 | RSS | x | x | x |
 | Telegram | x | x | |
 | test | x | x | |
@@ -34,6 +35,11 @@ producers:
     - community/name
     - tag/name
     - any/location/with/posts
+    topics:
+    - topic_for_producing
+  - type: reddit
+    sources:
+    - subreddit_name
     topics:
     - topic_for_producing
   - type: rss

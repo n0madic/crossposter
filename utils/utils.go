@@ -3,15 +3,19 @@ package utils
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
+	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/djimenez/iconv-go"
 )
+
+var httpClient = &http.Client{Timeout: 5 * time.Second}
 
 // IsRequestURL function
 func IsRequestURL(rawurl string) bool {
@@ -49,6 +53,23 @@ func DownloadFile(uri string, filePath string) error {
 	}
 
 	return nil
+}
+
+// GetJSON from URL
+func GetJSON(url string, target interface{}) error {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("User-Agent", "Crossposter/1.0")
+
+	r, err := httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer r.Body.Close()
+
+	return json.NewDecoder(r.Body).Decode(target)
 }
 
 // GetURLContentInBase64 get content from URL and return it in base64
