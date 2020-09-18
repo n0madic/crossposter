@@ -148,12 +148,18 @@ func (tg *Telegram) Post(post crossposter.Post) {
 			} else {
 				var msg tgbotapi.Chattable
 				if len(post.Attachments) == 1 {
-					photo := tgbotapi.NewPhotoUpload(channelID, nil)
-					photo.FileID = post.Attachments[0]
-					photo.UseExisting = true
-					photo.Caption = text
-					photo.ParseMode = "HTML"
-					msg = photo
+					lowerURL := strings.ToLower(post.Attachments[0])
+					if strings.HasSuffix(lowerURL, "gif") || strings.HasSuffix(lowerURL, "pdf") {
+						doc := tgbotapi.NewDocumentShare(channelID, post.Attachments[0])
+						doc.Caption = text
+						doc.ParseMode = "HTML"
+						msg = doc
+					} else {
+						photo := tgbotapi.NewPhotoShare(channelID, post.Attachments[0])
+						photo.Caption = text
+						photo.ParseMode = "HTML"
+						msg = photo
+					}
 				} else {
 					var files []interface{}
 					for i := 0; i < 10 && i < len(post.Attachments); i++ {
