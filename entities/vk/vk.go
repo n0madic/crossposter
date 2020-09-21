@@ -77,6 +77,7 @@ func (vk *Vk) Get(lastUpdate time.Time) {
 						}
 						var photos []string
 						var needMore bool
+						title := ""
 						if item.Attachments != nil {
 							if len(item.Attachments) > 1 {
 								needMore = true
@@ -93,6 +94,9 @@ func (vk *Vk) Get(lastUpdate time.Time) {
 										photos = append(photos, attach.Document.URL)
 										break
 									}
+								case "link":
+									item.Text += "\n" + attach.Link.URL
+									title = attach.Link.Title
 								default:
 									needMore = true
 								}
@@ -117,6 +121,7 @@ func (vk *Vk) Get(lastUpdate time.Time) {
 							Date:        timestamp,
 							URL:         fmt.Sprintf("https://vk.com/wall%v_%v", item.FromID, item.ID),
 							Author:      author,
+							Title:       title,
 							Text:        item.Text,
 							Attachments: photos,
 							More:        needMore,
