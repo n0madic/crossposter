@@ -46,29 +46,14 @@ func main() {
 		log.Fatalf("Can't parse last update time: %s", err)
 	}
 
-	for _, consumer := range cfg.Consumers {
-		if args.DontPost {
-			consumer.Topics = []string{}
-		}
-		newConsumer, err := crossposter.Initializers[consumer.Type](consumer)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		for _, topic := range consumer.Topics {
-			crossposter.Events.SubscribeAsync(topic, newConsumer.Post, true)
-		}
+	err = cfg.SubscribeConsumers(args.DontPost)
+	if err != nil {
+		log.Fatalln(err)
 	}
 
-	for _, producer := range cfg.Producers {
-		if producer.Wait == 0 {
-			producer.Wait = 5
-		}
-		newProducer, err := crossposter.Initializers[producer.Type](producer)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		crossposter.WaitGroup.Add(1)
-		go newProducer.Get(lastUpdate)
+	err = cfg.RunProducers(lastUpdate)
+	if err != nil {
+		log.Fatalln(err)
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
