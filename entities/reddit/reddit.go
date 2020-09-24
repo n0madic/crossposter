@@ -23,15 +23,27 @@ type Reddit struct {
 type (
 	Submission struct {
 		Author        string        `json:"author"`
+		BodyHTML      string        `json:"body_html"`
 		CreatedUTC    jsonTimestamp `json:"created_utc"`
 		LinkFlairText string        `json:"link_flair_text"`
-		Permalink     string        `json:"permalink"`
-		Pinned        bool          `json:"pinned"`
-		PostHint      string        `json:"post_hint"`
-		SelftextHTML  string        `json:"selftext_html"`
-		Stickied      bool          `json:"stickied"`
-		Title         string        `json:"title"`
-		URL           string        `json:"url"`
+		Name          string        `json:"name"`
+		MediaMetadata map[string]struct {
+			Status string `json:"status"`
+			E      string `json:"e"`
+			M      string `json:"m"`
+			S      struct {
+				Y int    `json:"y"`
+				X int    `json:"x"`
+				U string `json:"u"`
+			} `json:"s"`
+		} `json:"media_metadata"`
+		Permalink    string `json:"permalink"`
+		Pinned       bool   `json:"pinned"`
+		PostHint     string `json:"post_hint"`
+		SelftextHTML string `json:"selftext_html"`
+		Stickied     bool   `json:"stickied"`
+		Title        string `json:"title"`
+		URL          string `json:"url"`
 	}
 
 	Subreddit struct {
@@ -73,12 +85,20 @@ func (reddit *Reddit) Get(lastUpdate time.Time) {
 					if !sub.Data.Pinned && !sub.Data.Stickied && sub.Data.LinkFlairText != "MOD POST" {
 						var mediaURLs []string
 						url := sub.Data.URL
-						switch sub.Data.PostHint {
-						case "image":
+						if sub.Data.PostHint == "image" {
 							mediaURLs = append(mediaURLs, sub.Data.URL)
 							url = "https://www.reddit.com" + sub.Data.Permalink
+						} else {
+							for _, media := range sub.Data.MediaMetadata {
+								if media.E == "Image" {
+									mediaURLs = append(mediaURLs, html.UnescapeString(media.S.U))
+								}
+							}
 						}
 						text := html.UnescapeString(sub.Data.SelftextHTML)
+						if text == "" {
+							text = html.UnescapeString(sub.Data.BodyHTML)
+						}
 						text = strings.TrimPrefix(text, "<!-- SC_OFF -->")
 						text = strings.TrimSuffix(text, "<!-- SC_ON -->")
 						post := crossposter.Post{

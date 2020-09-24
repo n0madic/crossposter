@@ -14,7 +14,7 @@ func (t *jsonTimestamp) UnmarshalJSON(s []byte) (err error) {
 	if err != nil {
 		return err
 	}
-	*(*time.Time)(t) = time.Unix(int64(q), 0)
+	*(*time.Time)(t) = time.Unix(q, 0)
 	return nil
 }
 
