@@ -8,6 +8,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/davecgh/go-spew/spew"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/n0madic/crossposter"
 	"github.com/n0madic/crossposter/utils"
@@ -137,6 +138,7 @@ func (tg *Telegram) Post(post crossposter.Post) {
 			pmsg, err := tg.client.Send(msg)
 			if err != nil {
 				tgLogger.Error(err)
+				spew.Dump(post)
 			} else {
 				tgLogger.Printf("Posted https://t.me/%s/%v", pmsg.Chat.Title, pmsg.MessageID)
 			}
@@ -178,6 +180,7 @@ func (tg *Telegram) Post(post crossposter.Post) {
 				pmsg, err := tg.client.Send(msg)
 				if err != nil {
 					tgLogger.Error(err)
+					spew.Dump(post)
 				} else {
 					if pmsg.Chat != nil {
 						tgLogger.Printf("Posted https://t.me/%s/%v", pmsg.Chat.Title, pmsg.MessageID)
