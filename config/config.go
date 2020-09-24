@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/n0madic/crossposter"
+	_ "github.com/n0madic/crossposter/entities"
 	yaml "gopkg.in/yaml.v2"
 )
 

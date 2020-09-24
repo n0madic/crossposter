@@ -9,7 +9,6 @@ import (
 	arg "github.com/alexflint/go-arg"
 	"github.com/n0madic/crossposter"
 	"github.com/n0madic/crossposter/config"
-	_ "github.com/n0madic/crossposter/entities"
 	log "github.com/sirupsen/logrus"
 )
 
