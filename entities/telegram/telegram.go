@@ -119,7 +119,7 @@ func (tg *Telegram) Post(post crossposter.Post) {
 			disablePreview := false
 			if utf8.RuneCountInString(text) > 4096 {
 				text = utils.TruncateText(text, 4095) + "…"
-			} else if len(post.Attachments) > 0 {
+			} else if len(post.Attachments) > 0 && sanitize(post.Text) != "" {
 				disablePreview = true
 			}
 
@@ -138,7 +138,7 @@ func (tg *Telegram) Post(post crossposter.Post) {
 			pmsg, err := tg.client.Send(msg)
 			if err != nil {
 				tgLogger.Error(err)
-				spew.Dump(post)
+				spew.Dump(msg)
 			} else {
 				tgLogger.Printf("Posted https://t.me/%s/%v", pmsg.Chat.Title, pmsg.MessageID)
 			}
@@ -153,13 +153,17 @@ func (tg *Telegram) Post(post crossposter.Post) {
 					lowerURL := strings.ToLower(post.Attachments[0])
 					if strings.HasSuffix(lowerURL, "gif") || strings.HasSuffix(lowerURL, "pdf") {
 						doc := tgbotapi.NewDocumentShare(channelID, post.Attachments[0])
-						doc.Caption = text
-						doc.ParseMode = "HTML"
+						if utf8.RuneCountInString(text) <= 1024 {
+							doc.Caption = text
+							doc.ParseMode = "HTML"
+						}
 						msg = doc
 					} else {
 						photo := tgbotapi.NewPhotoShare(channelID, post.Attachments[0])
-						photo.Caption = text
-						photo.ParseMode = "HTML"
+						if utf8.RuneCountInString(text) <= 1024 {
+							photo.Caption = text
+							photo.ParseMode = "HTML"
+						}
 						msg = photo
 					}
 				} else {
@@ -180,7 +184,7 @@ func (tg *Telegram) Post(post crossposter.Post) {
 				pmsg, err := tg.client.Send(msg)
 				if err != nil {
 					tgLogger.Error(err)
-					spew.Dump(post)
+					spew.Dump(msg)
 				} else {
 					if pmsg.Chat != nil {
 						tgLogger.Printf("Posted https://t.me/%s/%v", pmsg.Chat.Title, pmsg.MessageID)
