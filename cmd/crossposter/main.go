@@ -17,9 +17,10 @@ const timeLayout = "2006-01-02T15:04:05"
 var (
 	args struct {
 		Bind     string `arg:"-b,env" help:"Bind address" default:":8000"`
-		Config   string `arg:"env" help:"Config file" default:"config.yaml"`
-		DontPost bool   `arg:"-d,env" help:"Do not post"`
-		Last     string `arg:"-l,env" help:"Initial date for update"`
+		Config   string `arg:"-c,env" help:"Config file" default:"config.yaml"`
+		DontPost bool   `arg:"-d,env:DONT_POST" help:"Do not post"`
+		Last     string `arg:"-i,env" help:"Initial date for update"`
+		LogLevel string `arg:"-l,env:LOG_LEVEL" help:"Set log level" default:"info"`
 	}
 	lastUpdate time.Time
 )
@@ -34,6 +35,12 @@ func init() {
 
 func main() {
 	arg.MustParse(&args)
+
+	ll, err := log.ParseLevel(args.LogLevel)
+	if err != nil {
+		log.Fatalf("Can't parse log level: %s", err)
+	}
+	log.SetLevel(ll)
 
 	cfg, err := config.New(args.Config)
 	if err != nil {
