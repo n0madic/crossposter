@@ -6,9 +6,9 @@ import (
 	"sort"
 	"time"
 
+	goinsta "github.com/ahmdrz/goinsta/v2"
 	"github.com/n0madic/crossposter"
 	log "github.com/sirupsen/logrus"
-	goinsta "gopkg.in/ahmdrz/goinsta.v2"
 )
 
 // Instagram entity
