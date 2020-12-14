@@ -54,7 +54,7 @@ func (pikabu *Pikabu) Get(lastUpdate time.Time) {
 					sel.Find(".story__sponsor").Each(func(i int, c *goquery.Selection) {
 						sponsor = true
 					})
-					timestamp, _ := time.Parse(time.RFC3339, sel.Find("div.user__info-item > time").First().AttrOr("datetime", ""))
+					timestamp, _ := time.Parse(time.RFC3339, sel.Find(".story__datetime").First().AttrOr("datetime", ""))
 					if !sponsor && !timestamp.IsZero() {
 						var mediaURLs []string
 						story := sel.Find(".story__content-inner").Each(func(i int, sel *goquery.Selection) {
