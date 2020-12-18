@@ -56,6 +56,10 @@ func (rss *RSS) Get(lastUpdate time.Time) {
 			if err != nil {
 				rssLogger.Error(err)
 			} else {
+				if len(sourceFeed.Items) > 0 && sourceFeed.Items[0].PublishedParsed == nil {
+					rssLogger.Error(fmt.Errorf("published datetime not found"))
+					continue
+				}
 
 				sort.Slice(sourceFeed.Items, func(i, j int) bool {
 					return sourceFeed.Items[i].PublishedParsed.Before(*sourceFeed.Items[j].PublishedParsed)
