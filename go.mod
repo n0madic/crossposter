@@ -5,9 +5,9 @@ go 1.15
 require (
 	github.com/ChimeraCoder/anaconda v2.0.0+incompatible
 	github.com/ChimeraCoder/tokenbucket v0.0.0-20131201223612-c5a927568de7 // indirect
-	github.com/PuerkitoBio/goquery v1.6.0
+	github.com/PuerkitoBio/goquery v1.6.1
 	github.com/ahmdrz/goinsta/v2 v2.4.5
-	github.com/alexflint/go-arg v1.3.0 // indirect
+	github.com/alexflint/go-arg v1.3.0
 	github.com/asaskevich/EventBus v0.0.0-20200907212545-49d423059eef
 	github.com/azr/backoff v0.0.0-20160115115103-53511d3c7330 // indirect
 	github.com/davecgh/go-spew v1.1.1
