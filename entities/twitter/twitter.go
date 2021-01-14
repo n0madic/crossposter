@@ -67,7 +67,7 @@ func (tw *Twitter) Get(lastUpdate time.Time) {
 
 				for _, tweet := range tweets {
 					timestamp, _ := tweet.CreatedAtTime()
-					if timestamp.After(lastUpdate) {
+					if tweet.InReplyToUserID == 0 && timestamp.After(lastUpdate) {
 						lastUpdate = timestamp
 						mediaURLs := []string{}
 						for _, media := range tweet.Entities.Media {
