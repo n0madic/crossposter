@@ -20,7 +20,7 @@ require (
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/himidori/golang-vk-api v0.0.0-20210404104913-eff438684eb7
 	github.com/kr/pretty v0.3.0 // indirect
-	github.com/microcosm-cc/bluemonday v1.0.15
+	github.com/microcosm-cc/bluemonday v1.0.16
 	github.com/mmcdole/gofeed v1.1.0
 	github.com/sirupsen/logrus v1.7.0
 	github.com/technoweenie/multipartstreamer v1.0.1 // indirect
