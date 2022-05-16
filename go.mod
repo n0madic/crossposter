@@ -5,10 +5,10 @@ go 1.15
 require (
 	github.com/ChimeraCoder/anaconda v2.0.0+incompatible
 	github.com/ChimeraCoder/tokenbucket v0.0.0-20131201223612-c5a927568de7 // indirect
-	github.com/PuerkitoBio/goquery v1.7.1
+	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/StarkBotsIndustries/telegraph/v2 v2.0.0
 	github.com/ahmdrz/goinsta/v2 v2.4.5
-	github.com/alexflint/go-arg v1.4.2
+	github.com/alexflint/go-arg v1.4.3
 	github.com/asaskevich/EventBus v0.0.0-20200907212545-49d423059eef
 	github.com/azr/backoff v0.0.0-20160115115103-53511d3c7330 // indirect
 	github.com/davecgh/go-spew v1.1.1
@@ -21,7 +21,7 @@ require (
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/himidori/golang-vk-api v0.0.0-20210404104913-eff438684eb7
 	github.com/kr/pretty v0.3.0 // indirect
-	github.com/microcosm-cc/bluemonday v1.0.16
+	github.com/microcosm-cc/bluemonday v1.0.18
 	github.com/mmcdole/gofeed v1.1.3
 	github.com/sirupsen/logrus v1.8.1
 	github.com/technoweenie/multipartstreamer v1.0.1 // indirect
