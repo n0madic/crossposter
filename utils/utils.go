@@ -2,10 +2,12 @@ package utils
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -15,7 +17,12 @@ import (
 	"github.com/djimenez/iconv-go"
 )
 
-var httpClient = &http.Client{Timeout: 5 * time.Second}
+var httpClient = &http.Client{
+	Timeout: 5 * time.Second,
+	Transport: &http.Transport{
+		TLSNextProto: map[string]func(authority string, c *tls.Conn) http.RoundTripper{},
+	},
+}
 
 // IsRequestURL function
 func IsRequestURL(rawurl string) bool {
@@ -30,14 +37,14 @@ func IsRequestURL(rawurl string) bool {
 }
 
 // DownloadFile to disk
-func DownloadFile(uri string, filePath string) error {
+func DownloadFile(url string, filePath string) error {
 	writer, err := os.Create(filePath)
 	if err != nil {
 		return err
 	}
 	defer writer.Close()
 
-	res, err := http.Get(uri)
+	res, err := http.Get(url)
 	if err != nil {
 		return err
 	}
@@ -69,12 +76,17 @@ func GetJSON(url string, target interface{}) error {
 	}
 	defer r.Body.Close()
 
+	if r.StatusCode != http.StatusOK {
+		content, _ := ioutil.ReadAll(r.Body)
+		return fmt.Errorf(string(content))
+	}
+
 	return json.NewDecoder(r.Body).Decode(target)
 }
 
 // GetURLContentInBase64 get content from URL and return it in base64
-func GetURLContentInBase64(uri string) (string, error) {
-	res, err := http.Get(uri)
+func GetURLContentInBase64(url string) (string, error) {
+	res, err := http.Get(url)
 	if err != nil {
 		return "", err
 	}
