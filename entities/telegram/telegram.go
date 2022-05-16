@@ -8,6 +8,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/StarkBotsIndustries/telegraph/v2"
 	"github.com/davecgh/go-spew/spew"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/n0madic/crossposter"
@@ -17,8 +18,9 @@ import (
 
 // Telegram entity
 type Telegram struct {
-	entity *crossposter.Entity
-	client *tgbotapi.BotAPI
+	entity         *crossposter.Entity
+	client         *tgbotapi.BotAPI
+	telegraphToken string
 }
 
 func init() {
@@ -31,7 +33,17 @@ func New(entity crossposter.Entity) (crossposter.EntityInterface, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to login: %v", err)
 	}
-	return &Telegram{&entity, client}, nil
+	acc, err := telegraph.CreateAccount(
+		telegraph.CreateAccountOpts{ShortName: "crossposter"},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Telegraph token: %v", err)
+	}
+	return &Telegram{
+		entity:         &entity,
+		client:         client,
+		telegraphToken: acc.AccessToken,
+	}, nil
 }
 
 // Get message from Telegram channel
@@ -118,7 +130,19 @@ func (tg *Telegram) Post(post crossposter.Post) {
 		if (text != "" && len(post.Attachments) == 0) || utf8.RuneCountInString(text) > 1024 {
 			disablePreview := false
 			if utf8.RuneCountInString(text) > 4096 {
-				text = utils.TruncateText(text, 4095) + "…"
+				page, err := telegraph.CreatePage(telegraph.CreatePageOpts{
+					Title:       post.Title,
+					AuthorName:  post.Author,
+					HTMLContent: text,
+					AccessToken: tg.telegraphToken,
+				})
+				if err == nil {
+					tgLogger.Printf("Telegraph page created: %v", page.URL)
+					text = fmt.Sprintf("<a href=\"%s\">%s</a>", page.URL, page.Title)
+				} else {
+					tgLogger.Warn("Can't create Telegraph page: ", err)
+					text = utils.TruncateText(text, 4095) + "…"
+				}
 			} else if len(post.Attachments) > 0 && sanitize(post.Text) != "" {
 				disablePreview = true
 			}

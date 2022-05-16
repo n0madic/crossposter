@@ -6,6 +6,7 @@ require (
 	github.com/ChimeraCoder/anaconda v2.0.0+incompatible
 	github.com/ChimeraCoder/tokenbucket v0.0.0-20131201223612-c5a927568de7 // indirect
 	github.com/PuerkitoBio/goquery v1.7.1
+	github.com/StarkBotsIndustries/telegraph/v2 v2.0.0
 	github.com/ahmdrz/goinsta/v2 v2.4.5
 	github.com/alexflint/go-arg v1.4.2
 	github.com/asaskevich/EventBus v0.0.0-20200907212545-49d423059eef
